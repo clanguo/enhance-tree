@@ -1,28 +1,32 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png" />
-    <HelloWorld msg="Welcome to Your Vue.js App" />
+    <tree class="tree" :list="list" keyField="id" v-slot="{ item }">
+      <div>{{ item.content }}</div>
+    </tree>
   </div>
 </template>
 
 <script>
-import HelloWorld from "./components/HelloWorld.vue";
-
+import Tree from '@/components/Tree'
+import data from './data.json'
 export default {
-  name: "App",
+  name: 'App',
   components: {
-    HelloWorld,
+    Tree
   },
-};
+  data() {
+    return {
+      list: data
+    }
+  }
+}
 </script>
 
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
+<style scoped>
+.tree {
+  width: 200px;
+  height: 400px;
+  margin: 10px auto;
+  border: 1px solid #ccc;
 }
 </style>
