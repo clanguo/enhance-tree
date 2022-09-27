@@ -1,29 +1,36 @@
 <template>
-  <div class="tree-list">
-    <tree-item
-      class="tree-item"
-      v-for="item in pool"
-      :key="item[keyField]"
-      :itemHeight="itemHeight"
-      :item="item"
-      :keyField="keyField"
-    >
-      <div :style="{ height: itemHeight }">
-        {{ item.content }}
-      </div>
-    </tree-item>
+  <div class="tree_list">
+    <div>
+      <slot :listItem="item.item"></slot>
+    </div>
+    <template v-if="item.children">
+      <tree-list
+        v-for="child in item.children"
+        :key="child.item.id"
+        :item="child"
+        v-slot="{ listItem }"
+      >
+        <slot :listItem="listItem"></slot>
+      </tree-list>
+    </template>
   </div>
 </template>
 
 <script>
-import TreeItem from './TreeItem'
-
 export default {
   name: 'TreeList',
-  components: {
-    TreeItem
+  components: {},
+  props: {
+    item: {
+      type: Object,
+      required: true
+    }
   }
 }
 </script>
 
-<style></style>
+<style scoped>
+.tree_list {
+  padding-left: 10px;
+}
+</style>

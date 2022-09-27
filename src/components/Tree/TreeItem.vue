@@ -9,7 +9,7 @@
         :keyField="keyField"
         :item="child"
       >
-        <div :style="{ height: itemHeight }">{{ child.content }}</div>
+        <slot :item="child.item"></slot>
       </tree-item>
     </template>
   </div>
@@ -17,13 +17,7 @@
 
 <script>
 export default {
-  name: 'TreeItem',
-  props: {
-    itemHeight: {
-      type: String,
-      required: true
-    }
-  }
+  name: 'TreeItem'
 }
 </script>
 

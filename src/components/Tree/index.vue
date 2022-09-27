@@ -1,25 +1,33 @@
 <template>
-  <div class="tree" ref="container" @scroll="setPool">
+  <div class="tree" ref="container">
     <div class="tree_container" :style="{ height: containerHeight + 'px' }">
-      <div
-        class="tree_item"
-        v-for="poolItem in pool"
-        :key="poolItem.item[keyField]"
-        :style="{
-          height: itemHeight + 'px',
-          transform: `translateY(${poolItem.y}px)`
-        }"
+      <tree-list
+        v-for="item in pool"
+        :key="item.item.id"
+        :item="item"
+        v-slot="{ listItem }"
       >
-        <slot :item="poolItem.item"></slot>
-      </div>
+        <div
+          v-if="item.item"
+          :style="{
+            transform: `transformY(${item.y}px)`,
+            height: `${itemHeight}px`
+          }"
+        >
+          {{ listItem.content }}
+        </div>
+      </tree-list>
     </div>
   </div>
 </template>
 
 <script>
+import TreeList from './TreeList.vue'
 export default {
   name: 'Tree',
-  components: {},
+  components: {
+    TreeList
+  },
   props: {
     list: {
       type: Array,
@@ -46,11 +54,13 @@ export default {
       return this.list
     },
     containerHeight() {
-      return this.list.length * this.itemHeight
+      const len = this.getDeepLength(this.list)
+      return len * this.itemHeight
     }
   },
   mounted() {
     this.setPool()
+    window.setPool = this.setPool.bind(this)
     // this.$refs['container'].addEventListener('scroll', this.setPool)
   },
   methods: {
@@ -59,15 +69,84 @@ export default {
       const scrollTop = this.$refs['container'].scrollTop
       let startIndex = Math.floor(scrollTop / this.itemHeight)
       let endIndex = Math.ceil((scrollTop + height) / this.itemHeight)
+
       startIndex = Math.max(0, startIndex - this.prev)
-      endIndex = Math.min(this.list.length, endIndex + this.next)
+      // endIndex = Math.min(this.getDeepLength, endIndex + this.next)
+      endIndex += this.next
       const startY = startIndex * this.itemHeight
-      this.pool = this.list.slice(startIndex, endIndex).map((item, index) => {
-        return {
-          item: item,
-          y: startY + index * this.itemHeight
+      this.startY = startY
+      // 计算起始下标时需要连带子节点
+      const result = this.getPool(this.list, startIndex, endIndex, 0, 0)
+      this.pool = result.list
+      // this.pool = this.list.slice(startIndex, endIndex).map((item, index) => {
+      //   return {
+      //     item: item,
+      //     y: startY + index * this.itemHeight
+      //   }
+      // })
+    },
+    /**
+     * @param arr {Array<{content: '', children?: []}>}
+     * @param startIndex {Number}
+     * @param endIndex {Number}
+     * @param curIndex {Number}
+     * @param count {Number}
+     * @return{{list: [], curIndex: number, count: number}}
+     */
+    getPool(arr, startIndex, endIndex, curIndex, count) {
+      let result = []
+      debugger
+      for (let i = 0; i < arr.length; i++) {
+        const { children, ...item } = arr[i]
+        let listItem = {}
+        if (curIndex < startIndex) {
+          curIndex++
+          let res = this.getPool(
+            children,
+            startIndex,
+            endIndex,
+            curIndex,
+            count
+          )
+          listItem.children = res.list
+        } else if (curIndex < endIndex) {
+          count++
+          curIndex++
+
+          listItem.y = curIndex * this.itemHeight
+          listItem.item = item
+
+          if (children?.length) {
+            let res = this.getPool(
+              children,
+              startIndex,
+              endIndex,
+              curIndex,
+              count
+            )
+            listItem.children = res.list
+            curIndex = res.curIndex
+            count = res.count
+          }
+        } else {
+          break
         }
-      })
+
+        result.push(listItem)
+      }
+      return {
+        list: result,
+        curIndex,
+        count
+      }
+    },
+    getDeepLength(arr) {
+      return arr
+        ? arr.reduce(
+            (prev, cur) => prev + 1 + this.getDeepLength(cur.children),
+            0
+          )
+        : 0
     }
   }
 }
