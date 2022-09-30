@@ -1,33 +1,46 @@
 <template>
-  <div class="tree" ref="container">
-    <div class="tree_container" :style="{ height: containerHeight + 'px' }">
-      <tree-list
-        v-for="item in pool"
-        :key="item.item.id"
-        :item="item"
-        v-slot="{ listItem }"
+  <div class="tree" ref="container" @scroll="setPool">
+    <div :style="{ height: `${containerHeight}px` }">
+      <div
+        class="tree_container"
+        :style="{
+          transform: `translateY(${containerOffset}px)`
+        }"
       >
         <div
-          v-if="item.item"
+          v-for="item in pool"
+          :key="item[keyField]"
+          class="tree_node"
           :style="{
-            transform: `transformY(${item.y}px)`,
             height: `${itemHeight}px`
           }"
         >
-          {{ listItem.content }}
+          <div class="tree_node--content" :style="`--level: ${item.level}`">
+            <span
+              v-if="item.children?.length"
+              class="tree_node__expand-btn"
+              :class="item.expand ? 'tree_node--expand' : 'tree_node--close'"
+              @click="toggleExpand(item, !item.expand)"
+            ></span>
+            <span v-else class="tree_node--blank"></span>
+            <input
+              type="checkbox"
+              :checked="item.checked"
+              @change="toggleChecked(item, !item.checked)"
+            />
+            <div class="tree_node--slot">
+              <slot :item="item"></slot>
+            </div>
+          </div>
         </div>
-      </tree-list>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import TreeList from './TreeList.vue'
 export default {
   name: 'Tree',
-  components: {
-    TreeList
-  },
   props: {
     list: {
       type: Array,
@@ -40,113 +53,145 @@ export default {
     itemHeight: {
       type: Number,
       default: 30
+    },
+    prev: {
+      // 渲染列表前多渲染的个数
+      type: Number,
+      default: 5
+    },
+    next: {
+      // 渲染列表后多渲染的个数
+      type: Number,
+      default: 5
     }
   },
   data() {
     return {
-      pool: [], // 渲染池, { item: 内容, y: y偏移 }
-      prev: 5, // 最前面多显示个数
-      next: 5 // 最后面多显示个数
+      pool: [], // 渲染池, { item: 内容, y: y偏移, level: 层级 }
+      defaultExpand: false, // 默认是否展开
+      containerOffset: 0, // 滚动容器的Offest
+      containerHeight: 0
     }
   },
   computed: {
-    renderData() {
-      return this.list
-    },
-    containerHeight() {
-      const len = this.getDeepLength(this.list)
-      return len * this.itemHeight
+    // 将多层级的树拍扁
+    flatterData() {
+      return this.flat(this.list, 1, null)
     }
   },
   mounted() {
+    // 挂载后计算显示内容
     this.setPool()
-    window.setPool = this.setPool.bind(this)
-    // this.$refs['container'].addEventListener('scroll', this.setPool)
   },
   methods: {
-    setPool() {
-      const height = this.$refs['container'].clientHeight
-      const scrollTop = this.$refs['container'].scrollTop
-      let startIndex = Math.floor(scrollTop / this.itemHeight)
-      let endIndex = Math.ceil((scrollTop + height) / this.itemHeight)
-
-      startIndex = Math.max(0, startIndex - this.prev)
-      // endIndex = Math.min(this.getDeepLength, endIndex + this.next)
-      endIndex += this.next
-      const startY = startIndex * this.itemHeight
-      this.startY = startY
-      // 计算起始下标时需要连带子节点
-      const result = this.getPool(this.list, startIndex, endIndex, 0, 0)
-      this.pool = result.list
-      // this.pool = this.list.slice(startIndex, endIndex).map((item, index) => {
-      //   return {
-      //     item: item,
-      //     y: startY + index * this.itemHeight
-      //   }
-      // })
-    },
-    /**
-     * @param arr {Array<{content: '', children?: []}>}
-     * @param startIndex {Number}
-     * @param endIndex {Number}
-     * @param curIndex {Number}
-     * @param count {Number}
-     * @return{{list: [], curIndex: number, count: number}}
-     */
-    getPool(arr, startIndex, endIndex, curIndex, count) {
+    // 拍扁一个数组，并添加level和parent属性
+    flat(arr, level = 1, parent = null, expand = false) {
       let result = []
-      debugger
-      for (let i = 0; i < arr.length; i++) {
-        const { children, ...item } = arr[i]
-        let listItem = {}
-        if (curIndex < startIndex) {
-          curIndex++
-          let res = this.getPool(
-            children,
-            startIndex,
-            endIndex,
-            curIndex,
-            count
-          )
-          listItem.children = res.list
-        } else if (curIndex < endIndex) {
-          count++
-          curIndex++
+      arr.forEach(node => {
+        node.level = level
+        node.parent = parent
+        node.expand = typeof node.expand === 'boolean' ? node.expand : expand
+        node.visible = level === 1 || (parent?.expand && parent?.visible)
 
-          listItem.y = curIndex * this.itemHeight
-          listItem.item = item
+        result.push(node)
+        node?.children?.length &&
+          (result = result.concat(this.flat(node.children, level + 1, node)))
+      })
 
-          if (children?.length) {
-            let res = this.getPool(
-              children,
-              startIndex,
-              endIndex,
-              curIndex,
-              count
-            )
-            listItem.children = res.list
-            curIndex = res.curIndex
-            count = res.count
-          }
-        } else {
-          break
-        }
-
-        result.push(listItem)
-      }
-      return {
-        list: result,
-        curIndex,
-        count
-      }
+      return result
     },
-    getDeepLength(arr) {
-      return arr
-        ? arr.reduce(
-            (prev, cur) => prev + 1 + this.getDeepLength(cur.children),
-            0
-          )
-        : 0
+    setPool() {
+      performance.mark('startPool')
+      this.setContainerHeight()
+      const height = this.$refs['container'].clientHeight
+      let len = this.flatterData.length
+      // 滚动高度
+      const scrollTop = this.$refs['container'].scrollTop
+      // 第一个渲染的下标
+      let startIndex = Math.floor(scrollTop / this.itemHeight)
+      // 最后一个渲染的下标
+      let endIndex = Math.ceil((scrollTop + height) / this.itemHeight)
+      // 第一个下标向前移动prev个
+      startIndex = Math.max(0, startIndex - this.prev)
+      // 最后一个下标向后移动next个
+      endIndex = Math.min(len, endIndex + this.next)
+      // let count = endIndex - startIndex
+      // 滚动区域的scrollTop，即第一个元素的translateY
+      const startY = startIndex * this.itemHeight
+      this.containerOffset = Math.min(this.containerHeight, startY)
+      let result = []
+      const data = this.flatterData.filter(item => item.visible)
+      endIndex = Math.min(endIndex, data.length)
+      for (let i = startIndex; i < endIndex; i++) {
+        result.push(data[i])
+      }
+
+      this.$emit('update', result, this.pool)
+
+      this.pool = result
+      performance.mark('endPool')
+      console.log(
+        'performance duration: %ss',
+        performance.measure('pool', 'startPool', 'endPool').duration
+      )
+      performance.clearMarks()
+      performance.clearMeasures()
+    },
+    toggleExpand(item, value) {
+      value ? this.expand(item) : this.collapse(item)
+      this.toggleVisible(item.children || [], value)
+      this.setPool()
+    },
+    expand(item) {
+      item.expand = true
+      this.$emit('expand', item)
+    },
+    collapse(item) {
+      item.expand = false
+      this.$emit('collapse', item)
+    },
+    toggleVisible(list, value) {
+      list.forEach(node => {
+        node.visible = value
+        if (node.expand && node.children) {
+          this.toggleVisible(node.children, value)
+        }
+      })
+    },
+    toggleChecked(node, value) {
+      this.setChecked(node, value)
+      this.$emit('checked', value)
+      this.setPool()
+    },
+    setChecked(node, value) {
+      node.checked = value
+      this.setChildrenChecked(node, value)
+      this.setParentChecked(node, value)
+    },
+    setParentChecked(node, value) {
+      if (!node.parent) return
+      let parentChecked
+      if (value) {
+        parentChecked = !node.parent.children.some(i => i.checked !== true)
+      } else {
+        parentChecked = false
+      }
+      node.parent.checked = parentChecked
+      this.setParentChecked(node.parent, parentChecked)
+    },
+    setChildrenChecked(node, value) {
+      if (!node.children) return
+      node.children.forEach(i => {
+        i.checked = value
+        this.setChildrenChecked(i, value)
+      })
+    },
+    setContainerHeight() {
+      const data = this.flatterData
+      const len = data.filter(item => {
+        return item.level === 1 || (item.parent.expand && item.visible)
+      }).length
+      this.containerHeight = len * this.itemHeight
     }
   }
 }
@@ -167,9 +212,43 @@ export default {
   background-color: #a1a1a1;
 }
 
-.tree_item {
-  position: absolute;
-  top: 0;
-  left: 0;
+.tree_container {
+  will-change: transform;
+}
+
+.tree_node {
+  overflow: hidden;
+}
+
+.tree_node--content {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  padding-left: calc(var(--level) * 10px);
+}
+
+.tree_node__expand-btn {
+  flex: 0;
+  width: 0;
+  height: 0;
+  margin-right: 5px;
+  border: 5px solid transparent;
+  cursor: pointer;
+  border-left-color: #ccc;
+  will-change: transform;
+  transform: rotateZ(0);
+}
+
+.tree_node--expand {
+  transform: rotateZ(90deg);
+}
+
+.tree_node--slot {
+  flex: 1;
+}
+
+.tree_node--blank {
+  flex: 0 0 5px;
+  margin-right: 10px;
 }
 </style>
