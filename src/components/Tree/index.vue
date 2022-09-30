@@ -3,7 +3,7 @@
     <div v-if="enableFilter" class="tree_filter">
       <input type="text" :value="filterValue" @keyup.enter="filterTree" />
     </div>
-    <div class="tree_container" ref="container" @scroll="setPool">
+    <div class="tree_container" ref="container" @scroll="onScroll">
       <div :style="{ height: `${containerHeight}px` }">
         <div
           class="tree_scroll"
@@ -45,6 +45,14 @@
 </template>
 
 <script>
+import { throttle } from '@/utils'
+
+const __DEV__ = process.env.NODE_ENV === 'development'
+
+const onScroll = throttle(function () {
+  this.setPool()
+}, 50)
+
 export default {
   name: 'Tree',
   props: {
@@ -77,6 +85,10 @@ export default {
     filterValue: {
       type: String,
       default: ''
+    },
+    expandKeys: {
+      type: Array,
+      default: () => []
     }
   },
   data() {
@@ -84,7 +96,8 @@ export default {
       pool: [], // 渲染池, { item: 内容, y: y偏移, level: 层级 }
       defaultExpand: false, // 默认是否展开
       containerOffset: 0, // 滚动容器的Offest
-      containerHeight: 0
+      containerHeight: 0,
+      firstRender: true
     }
   },
   computed: {
@@ -111,6 +124,11 @@ export default {
         node.level = level
         node.parent = parent
         node.expand = typeof node.expand === 'boolean' ? node.expand : expand
+        if (this.firstRender && !this.enableFilter) {
+          if (this.expandKeys.includes(node[this.keyField])) {
+            node.expand = true
+          }
+        }
         node.visible = level === 1 || (parent?.expand && parent?.visible)
 
         result.push(node)
@@ -120,11 +138,13 @@ export default {
 
       return result
     },
+    onScroll,
     setPool() {
       performance.mark('startPool')
       this.setContainerHeight()
       const height = this.$refs['container'].clientHeight
-      let len = this.flatterData.length
+      const flatterData = this.flatterData
+      const len = flatterData.length
       // 滚动高度
       const scrollTop = this.$refs['container'].scrollTop
       // 第一个渲染的下标
@@ -140,22 +160,28 @@ export default {
       const startY = startIndex * this.itemHeight
       this.containerOffset = Math.min(this.containerHeight, startY)
       let result = []
-      const data = this.flatterData.filter(item => item.visible)
+      const data = flatterData.filter(item => item.visible)
       endIndex = Math.min(endIndex, data.length)
       for (let i = startIndex; i < endIndex; i++) {
         result.push(data[i])
       }
 
       this.$emit('update', result, this.pool)
+      if (this.flatterData.length) {
+        this.firstRender = false
+      }
 
       this.pool = result
-      performance.mark('endPool')
-      console.log(
-        'performance duration: %ss',
-        performance.measure('pool', 'startPool', 'endPool').duration
-      )
-      performance.clearMarks()
-      performance.clearMeasures()
+
+      if (__DEV__) {
+        performance.mark('endPool')
+        console.log(
+          'performance duration: %ss',
+          performance.measure('pool', 'startPool', 'endPool').duration
+        )
+        performance.clearMarks()
+        performance.clearMeasures()
+      }
     },
     toggleExpand(item, value) {
       value ? this.expand(item) : this.collapse(item)
@@ -169,6 +195,24 @@ export default {
     collapse(item) {
       item.expand = false
       this.$emit('collapse', item)
+    },
+    expandAll() {
+      this.flatterData.forEach(node => {
+        node.expand = true
+        node.visible = true
+      })
+      this.$nextTick(() => {
+        this.setPool()
+      })
+    },
+    collapseAll() {
+      this.flatterData.forEach(node => {
+        node.expand = false
+        node.visible = node.level === 1
+      })
+      this.$nextTick(() => {
+        this.setPool()
+      })
     },
     toggleVisible(list, value) {
       list.forEach(node => {
@@ -226,6 +270,10 @@ export default {
       // 必须要nextTick，不然会有一次延迟
       this.$nextTick(() => {
         this.setPool()
+        this.$emit(
+          'filter',
+          this.flatterData.filter(item => item.visible)
+        )
       })
     }
   }
@@ -312,6 +360,8 @@ export default {
 
 .tree_node--slot {
   flex: 1;
+  width: 100%;
+  overflow: hidden;
 }
 
 .tree_node--blank {

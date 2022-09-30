@@ -1,14 +1,14 @@
 <template>
   <div id="app">
     <tree
+      ref="tree"
       class="tree"
       :list="list"
       keyField="id"
       v-slot="{ item }"
-      enableFilter
       :filterValue.sync="filterValue"
     >
-      <div>{{ item.content }}</div>
+      <div class="content">{{ item.content }}</div>
     </tree>
   </div>
 </template>
@@ -26,6 +26,9 @@ export default {
       list: data,
       filterValue: ''
     }
+  },
+  mounted() {
+    window.tree = this.$refs['tree']
   }
 }
 </script>
@@ -36,5 +39,11 @@ export default {
   height: 400px;
   margin: 10px auto;
   border: 1px solid #ccc;
+}
+
+.content {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
