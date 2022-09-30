@@ -1,35 +1,41 @@
 <template>
-  <div class="tree" ref="container" @scroll="setPool">
-    <div :style="{ height: `${containerHeight}px` }">
-      <div
-        class="tree_container"
-        :style="{
-          transform: `translateY(${containerOffset}px)`
-        }"
-      >
+  <div class="tree">
+    <div v-if="enableFilter" class="tree_filter">
+      <input type="text" :value="filterValue" @keyup.enter="filterTree" />
+    </div>
+    <div class="tree_container" ref="container" @scroll="setPool">
+      <div :style="{ height: `${containerHeight}px` }">
         <div
-          v-for="item in pool"
-          :key="item[keyField]"
-          class="tree_node"
+          class="tree_scroll"
           :style="{
-            height: `${itemHeight}px`
+            transform: `translateY(${containerOffset}px)`
           }"
         >
-          <div class="tree_node--content" :style="`--level: ${item.level}`">
-            <span
-              v-if="item.children?.length"
-              class="tree_node__expand-btn"
-              :class="item.expand ? 'tree_node--expand' : 'tree_node--close'"
-              @click="toggleExpand(item, !item.expand)"
-            ></span>
-            <span v-else class="tree_node--blank"></span>
-            <input
-              type="checkbox"
-              :checked="item.checked"
-              @change="toggleChecked(item, !item.checked)"
-            />
-            <div class="tree_node--slot">
-              <slot :item="item"></slot>
+          <div
+            v-for="item in pool"
+            :key="item[keyField]"
+            class="tree_node"
+            :style="{
+              height: `${itemHeight}px`
+            }"
+          >
+            <div class="tree_node--content" :style="`--level: ${item.level}`">
+              <span
+                v-if="item.children?.length"
+                class="tree_node__expand-btn"
+                :class="item.expand ? 'tree_node--expand' : 'tree_node--close'"
+                @click="toggleExpand(item, !item.expand)"
+              ></span>
+              <span v-else class="tree_node--blank"></span>
+              <input
+                v-if="!enableFilter"
+                type="checkbox"
+                :checked="item.checked"
+                @change="toggleChecked(item, !item.checked)"
+              />
+              <div class="tree_node--slot">
+                <slot :item="item"></slot>
+              </div>
             </div>
           </div>
         </div>
@@ -63,6 +69,14 @@ export default {
       // 渲染列表后多渲染的个数
       type: Number,
       default: 5
+    },
+    enableFilter: {
+      type: Boolean,
+      default: false
+    },
+    filterValue: {
+      type: String,
+      default: ''
     }
   },
   data() {
@@ -76,7 +90,13 @@ export default {
   computed: {
     // 将多层级的树拍扁
     flatterData() {
-      return this.flat(this.list, 1, null)
+      let filterValue = this.filterValue
+      const data = this.flat(this.list, 1, null)
+      return this.enableFilter
+        ? data.filter(
+            node => node.level === 1 || node.content.indexOf(filterValue) >= 0
+          )
+        : data
     }
   },
   mounted() {
@@ -192,6 +212,21 @@ export default {
         return item.level === 1 || (item.parent.expand && item.visible)
       }).length
       this.containerHeight = len * this.itemHeight
+    },
+    filterTree(event) {
+      let val = event.target.value
+      if (this.filterValue === val) return
+      this.$emit('update:filterValue', val)
+      const expand = node => {
+        node.expand = !!val
+        // 第一层级必定为true，其他层级需要根据val是否为空，为空不显示
+        node.visible = node.level === 1 || val !== ''
+      }
+      this.flatterData.forEach(expand)
+      // 必须要nextTick，不然会有一次延迟
+      this.$nextTick(() => {
+        this.setPool()
+      })
     }
   }
 }
@@ -199,8 +234,9 @@ export default {
 
 <style scoped>
 .tree {
-  position: relative;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .tree::-webkit-scrollbar {
@@ -212,7 +248,38 @@ export default {
   background-color: #a1a1a1;
 }
 
+.tree_filter {
+  /* flex: 0 0 50px; */
+  flex: 0;
+  padding: 5px;
+}
+
+.tree_filter input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 8px;
+  font-size: 12px;
+  border: 1px solid #d7dde4;
+  outline: none;
+  border-radius: 4px;
+  color: #495060;
+  background-color: #fff;
+  background-image: none;
+}
+
+.tree_filter input:focus {
+  border-color: #54a4ff;
+  outline: 0;
+  box-shadow: 0 0 0 2px rgb(41 141 255 / 20%);
+}
+
 .tree_container {
+  flex: 1;
+  position: relative;
+  overflow: auto;
+}
+
+.tree_scroll {
   will-change: transform;
 }
 

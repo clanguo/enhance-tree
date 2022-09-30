@@ -1,6 +1,13 @@
 <template>
   <div id="app">
-    <tree class="tree" :list="list" keyField="id" v-slot="{ item }">
+    <tree
+      class="tree"
+      :list="list"
+      keyField="id"
+      v-slot="{ item }"
+      enableFilter
+      :filterValue.sync="filterValue"
+    >
       <div>{{ item.content }}</div>
     </tree>
   </div>
@@ -16,7 +23,8 @@ export default {
   },
   data() {
     return {
-      list: data
+      list: data,
+      filterValue: ''
     }
   }
 }
