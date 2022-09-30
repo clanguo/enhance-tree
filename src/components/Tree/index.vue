@@ -176,7 +176,7 @@ export default {
       if (__DEV__) {
         performance.mark('endPool')
         console.log(
-          'performance duration: %ss',
+          'performance duration: %sms',
           performance.measure('pool', 'startPool', 'endPool').duration
         )
         performance.clearMarks()
