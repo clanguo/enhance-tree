@@ -91,24 +91,27 @@ export default {
       defaultExpand: false, // 默认是否展开
       containerOffset: 0, // 滚动容器的Offest
       containerHeight: 0,
-      firstRender: true
-    }
-  },
-  computed: {
-    // 将多层级的树拍扁
-    flatterData() {
-      let filterValue = this.filterValue
-      const data = this.flat(this.list, 1, null)
-      return this.enableFilter
-        ? data.filter(
-            node => node.level === 1 || node.content.indexOf(filterValue) >= 0
-          )
-        : data
+      firstRender: true,
+      flatterData: []
     }
   },
   mounted() {
     // 挂载后计算显示内容
     this.setPool()
+  },
+  watch: {
+    list: {
+      immediate: true,
+      handler(value) {
+        let filterValue = this.filterValue
+        const data = this.flat(value, 1, null)
+        this.flatterData = this.enableFilter
+          ? data.filter(
+              node => node.level === 1 || node.content.indexOf(filterValue) >= 0
+            )
+          : data
+      }
+    }
   },
   methods: {
     // 拍扁一个数组，并添加level和parent属性
