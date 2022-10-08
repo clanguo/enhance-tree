@@ -45,13 +45,7 @@
 </template>
 
 <script>
-import { throttle } from '@/utils'
-
 const __DEV__ = process.env.NODE_ENV === 'development'
-
-const onScroll = throttle(function () {
-  this.setPool()
-}, 50)
 
 export default {
   name: 'Tree',
@@ -138,7 +132,9 @@ export default {
 
       return result
     },
-    onScroll,
+    onScroll() {
+      this.setPool()
+    },
     setPool() {
       performance.mark('startPool')
       this.setContainerHeight()
