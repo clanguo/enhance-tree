@@ -140,7 +140,6 @@ export default {
     },
     setPool() {
       performance.mark('startPool')
-      this.setContainerHeight()
       const height = this.$refs['container'].clientHeight
       const flatterData = this.flatterData
       const len = flatterData.length
@@ -185,7 +184,7 @@ export default {
     toggleExpand(item, value) {
       value ? this.expand(item) : this.collapse(item)
       this.toggleVisible(item.children || [], value)
-      this.setPool()
+      this.resetPool()
     },
     expand(item) {
       item.expand = true
@@ -201,7 +200,7 @@ export default {
         node.visible = true
       })
       this.$nextTick(() => {
-        this.setPool()
+        this.resetPool()
       })
     },
     collapseAll() {
@@ -210,7 +209,7 @@ export default {
         node.visible = node.level === 1
       })
       this.$nextTick(() => {
-        this.setPool()
+        this.resetPool()
       })
     },
     toggleVisible(list, value) {
@@ -224,7 +223,7 @@ export default {
     toggleChecked(node, value) {
       this.setChecked(node, value)
       this.$emit('checked', value)
-      this.setPool()
+      this.resetPool()
     },
     setChecked(node, value) {
       node.checked = value
@@ -268,12 +267,16 @@ export default {
       this.flatterData.forEach(expand)
       // 必须要nextTick，不然会有一次延迟
       this.$nextTick(() => {
-        this.setPool()
+        this.resetPool()
         this.$emit(
           'filter',
           this.flatterData.filter(item => item.visible)
         )
       })
+    },
+    resetPool() {
+      this.setContainerHeight()
+      this.setPool()
     }
   }
 }
