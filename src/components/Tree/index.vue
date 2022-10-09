@@ -3,6 +3,7 @@
     <div v-if="enableFilter" class="tree_filter">
       <input type="text" :value="filterValue" @keyup.enter="filterTree" />
     </div>
+    <Loading v-if="loading" class="loading"></Loading>
     <div class="tree_container" ref="container" @scroll="onScroll">
       <div :style="{ height: `${containerHeight}px` }">
         <div
@@ -45,10 +46,15 @@
 </template>
 
 <script>
+import Loading from './Loading.vue'
+
 const __DEV__ = process.env.NODE_ENV === 'development'
 
 export default {
   name: 'Tree',
+  components: {
+    Loading
+  },
   props: {
     list: {
       type: Array,
@@ -94,19 +100,15 @@ export default {
       containerHeight: 0, // 滚动容器的高度
       firstRender: false, // 是否是第一次渲染
       flatterData: [], // 拍扁后的数组
-      initCount: 0 // 用于permance统计第几次初始化数据
+      initCount: 0, // 用于permance统计第几次初始化数据
+      loading: true // 数据正在初始化ing
     }
-  },
-  mounted() {
-    // 挂载后计算显示内容
-    this.setFlatData()
-    this.setPool()
   },
   watch: {
     list: {
+      immediate: true,
       handler() {
-        this.setFlatData()
-        this.setPool()
+        this.initData()
       }
     },
     filterValue: {
@@ -140,6 +142,14 @@ export default {
     }
   },
   methods: {
+    initData() {
+      this.loading = true
+      setTimeout(() => {
+        this.setFlatData()
+        this.loading = false
+        this.setPool()
+      })
+    },
     setFlatData() {
       let count = this.initCount++
       if (__DEV__) {
@@ -153,7 +163,7 @@ export default {
             node => node.level === 1 || node.content.indexOf(filterValue) >= 0
           )
         : data
-      this.resetPool()
+      // this.resetPool()
       if (__DEV__) {
         performance.mark('initEnd' + count)
         console.log(
@@ -383,19 +393,11 @@ export default {
 
 <style scoped>
 .tree {
+  position: relative;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
-
-/* .tree::-webkit-scrollbar {
-  width: 2px;
-  height: 2px;
-}
-
-.tree::-webkit-scrollbar-thumb {
-  background-color: #a1a1a1;
-} */
 
 .tree_filter {
   /* flex: 0 0 50px; */
@@ -468,5 +470,14 @@ export default {
 .tree_node--blank {
   flex: 0 0 5px;
   margin-right: 10px;
+}
+
+.loading {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  margin: auto;
 }
 </style>

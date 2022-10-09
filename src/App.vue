@@ -11,6 +11,7 @@
     >
       <div class="content">{{ item.content }}</div>
     </tree>
+    <p v-if="loading" style="text-align: center">数据加载中...</p>
   </div>
 </template>
 
@@ -24,10 +25,21 @@ export default {
   },
   data() {
     return {
-      list: data,
+      list: [],
       filterValue: '',
-      expandKeys: []
+      expandKeys: [],
+      loading: true
     }
+  },
+  created() {
+    this.list = data
+    this.loading = false
+    // fetch('http://10.188.131.179:5500/data.json')
+    //   .then(r => r.json())
+    //   .then(d => {
+    //     this.list = d
+    //     this.loading = false
+    //   })
   },
   mounted() {
     window.tree = this.$refs['tree']
