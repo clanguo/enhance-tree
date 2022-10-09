@@ -388,14 +388,14 @@ export default {
   overflow: hidden;
 }
 
-.tree::-webkit-scrollbar {
+/* .tree::-webkit-scrollbar {
   width: 2px;
   height: 2px;
 }
 
 .tree::-webkit-scrollbar-thumb {
   background-color: #a1a1a1;
-}
+} */
 
 .tree_filter {
   /* flex: 0 0 50px; */
