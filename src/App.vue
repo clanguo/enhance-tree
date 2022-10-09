@@ -6,6 +6,7 @@
       :list="list"
       keyField="id"
       v-slot="{ item }"
+      :expandKeys="expandKeys"
       :filterValue.sync="filterValue"
     >
       <div class="content">{{ item.content }}</div>
@@ -24,11 +25,17 @@ export default {
   data() {
     return {
       list: data,
-      filterValue: ''
+      filterValue: '',
+      expandKeys: []
     }
   },
   mounted() {
     window.tree = this.$refs['tree']
+    // this.$nextTick(() => {
+    //   setTimeout(() => {
+    //     this.filterValue = '1-2-10'
+    //   }, 10000)
+    // })
   }
 }
 </script>

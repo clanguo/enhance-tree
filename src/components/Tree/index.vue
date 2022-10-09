@@ -72,6 +72,7 @@ export default {
       type: Number,
       default: 5
     },
+    // 是否启用节点过滤
     enableFilter: {
       type: Boolean,
       default: false
@@ -87,46 +88,102 @@ export default {
   },
   data() {
     return {
-      pool: [], // 渲染池, { item: 内容, y: y偏移, level: 层级 }
+      pool: [], // 渲染池, { item: 内容, level: 层级, visible: 是否显示, expand: 是否展开, parent: 父节点, children: 子节点 }
       defaultExpand: false, // 默认是否展开
       containerOffset: 0, // 滚动容器的Offest
-      containerHeight: 0,
-      firstRender: true,
-      flatterData: []
+      containerHeight: 0, // 滚动容器的高度
+      firstRender: false, // 是否是第一次渲染
+      flatterData: [], // 拍扁后的数组
+      initCount: 0 // 用于permance统计第几次初始化数据
     }
   },
   mounted() {
     // 挂载后计算显示内容
+    this.setFlatData()
     this.setPool()
   },
   watch: {
     list: {
-      immediate: true,
-      handler(value) {
-        let filterValue = this.filterValue
-        const data = this.flat(value, 1, null)
-        this.flatterData = this.enableFilter
-          ? data.filter(
-              node => node.level === 1 || node.content.indexOf(filterValue) >= 0
-            )
-          : data
+      handler() {
+        this.setFlatData()
+        this.setPool()
+      }
+    },
+    filterValue: {
+      handler(val) {
+        if ((!val && this.firstRender) || !this.enableFilter) return
+
+        const toggleParenVisible = node => {
+          if (node.parent) {
+            node.parent.visible = true
+            node.parent.expand = true
+            toggleParenVisible(node.parent)
+          }
+        }
+
+        this.$nextTick(() => {
+          this.flatterData.forEach(node => {
+            if (!val) {
+              node.visible = node.level === 1
+              node.expand = false
+            } else {
+              let visible = node.content.includes(val)
+              node.visible = visible
+              if (visible) {
+                toggleParenVisible(node)
+              }
+            }
+          })
+          this.resetPool()
+        })
       }
     }
   },
   methods: {
-    // 拍扁一个数组，并添加level和parent属性
+    setFlatData() {
+      let count = this.initCount++
+      if (__DEV__) {
+        performance.mark('initStart' + count)
+      }
+      let filterValue = this.filterValue
+      let list = this.list
+      const data = this.flat(list, 1, null)
+      this.flatterData = this.enableFilter
+        ? data.filter(
+            node => node.level === 1 || node.content.indexOf(filterValue) >= 0
+          )
+        : data
+      this.resetPool()
+      if (__DEV__) {
+        performance.mark('initEnd' + count)
+        console.log(
+          '【init】 duration: %sms',
+          performance.measure(
+            'init' + count,
+            'initStart' + count,
+            'initEnd' + count
+          ).duration
+        )
+        performance.clearMarks('initStart' + count)
+        performance.clearMarks('initEnd' + count)
+        performance.clearMeasures('init' + count)
+      }
+    },
+    // 拍扁一个数组，并添加level,parent,expand,visible属性
     flat(arr, level = 1, parent = null, expand = false) {
       let result = []
       arr.forEach(node => {
         node.level = level
         node.parent = parent
         node.expand = typeof node.expand === 'boolean' ? node.expand : expand
+        // 如果是首次渲染且没有启用节点过滤，则默认展开expandKeys中的节点
         if (this.firstRender && !this.enableFilter) {
           if (this.expandKeys.includes(node[this.keyField])) {
             node.expand = true
           }
         }
-        node.visible = level === 1 || (parent?.expand && parent?.visible)
+        // 一级节点默认显示
+        node.visible = node.level === 1 || (parent?.expand && parent?.visible)
 
         result.push(node)
         node?.children?.length &&
@@ -139,7 +196,9 @@ export default {
       this.setPool()
     },
     setPool() {
-      performance.mark('startPool')
+      if (__DEV__) {
+        performance.mark('startPool')
+      }
       const height = this.$refs['container'].clientHeight
       const flatterData = this.flatterData
       const len = flatterData.length
@@ -165,6 +224,7 @@ export default {
       }
 
       this.$emit('update', result, this.pool)
+      // 有数据才认为已渲染
       if (this.flatterData.length) {
         this.firstRender = false
       }
@@ -174,35 +234,58 @@ export default {
       if (__DEV__) {
         performance.mark('endPool')
         console.log(
-          'performance duration: %sms',
+          '【pool】 duration: %sms',
           performance.measure('pool', 'startPool', 'endPool').duration
         )
-        performance.clearMarks()
-        performance.clearMeasures()
+        performance.clearMarks('startPool')
+        performance.clearMarks('endPool')
+        performance.clearMeasures('pool')
       }
     },
     toggleExpand(item, value) {
+      if (__DEV__) {
+        performance.mark('startToggleExpand')
+      }
       value ? this.expand(item) : this.collapse(item)
       this.toggleVisible(item.children || [], value)
       this.resetPool()
+      if (__DEV__) {
+        performance.mark('endToggleExpand')
+        console.log(
+          '【toggleExpand】 duration: %sms',
+          performance.measure(
+            '【toggleExpand】',
+            'startToggleExpand',
+            'endToggleExpand'
+          ).duration
+        )
+        performance.clearMarks('startToggleExpand')
+        performance.clearMarks('endToggleExpand')
+        performance.clearMeasures('【toggleExpand】')
+      }
     },
+    // 对外暴露使用，展开节点
     expand(item) {
       item.expand = true
       this.$emit('expand', item)
     },
+    // 对外暴露使用，收起节点
     collapse(item) {
       item.expand = false
       this.$emit('collapse', item)
     },
+    // 对外暴露使用，展开所有节点
     expandAll() {
       this.flatterData.forEach(node => {
         node.expand = true
         node.visible = true
       })
+      // 安全起见，等到挂载完有DOM后再调用
       this.$nextTick(() => {
         this.resetPool()
       })
     },
+    // 对外暴露使用，收起所有节点
     collapseAll() {
       this.flatterData.forEach(node => {
         node.expand = false
@@ -212,22 +295,50 @@ export default {
         this.resetPool()
       })
     },
+    // 递归切换节点可视性
     toggleVisible(list, value) {
+      const toggleParenVisible = node => {
+        if (node.parent) {
+          node.parent.visible = true
+          toggleParenVisible(node.parent)
+        }
+      }
+
       list.forEach(node => {
-        node.visible = value
-        if (node.expand && node.children) {
+        // 如果启用了节点过滤并且要显示节点
+        if (this.enableFilter && value) {
+          // 如果当前节点包含搜索内容
+          if (node.content.includes(this.filterValue)) {
+            // 是否显示要依据父节点是否展开
+            node.visible = node.parent ? node.parent.expand : true
+            // 如果包含了搜索内容，则应该向上显示父级
+            toggleParenVisible(node)
+          } else {
+            // 不包含则不显示
+            node.visible = false
+          }
+        } else {
+          node.visible = value
+        }
+
+        // 如果当前节点有子节点并且已展开或者已启用节点过滤，则递归切换子节点是否显示
+        if (node.children && (node.expand || node.enableFilter)) {
           this.toggleVisible(node.children, value)
         }
       })
     },
+    // 对外暴露使用，切换是否选择节点
     toggleChecked(node, value) {
       this.setChecked(node, value)
       this.$emit('checked', value)
       this.resetPool()
     },
+    // 设置节点选中
     setChecked(node, value) {
       node.checked = value
+      // 遍历子节点选中
       this.setChildrenChecked(node, value)
+      // 遍历父节点选中
       this.setParentChecked(node, value)
     },
     setParentChecked(node, value) {
@@ -248,31 +359,19 @@ export default {
         this.setChildrenChecked(i, value)
       })
     },
+    // 设置容器高度
     setContainerHeight() {
       const data = this.flatterData
-      const len = data.filter(item => {
-        return item.level === 1 || (item.parent.expand && item.visible)
-      }).length
+      // 容器的高度是可显示节点的高度和
+      const len = data.filter(item => item.visible).length
       this.containerHeight = len * this.itemHeight
     },
+    // 搜索过滤节点，输入框内回车时调用
     filterTree(event) {
       let val = event.target.value
+      // 如果两次回车时的值一样，不更新
       if (this.filterValue === val) return
       this.$emit('update:filterValue', val)
-      const expand = node => {
-        node.expand = !!val
-        // 第一层级必定为true，其他层级需要根据val是否为空，为空不显示
-        node.visible = node.level === 1 || val !== ''
-      }
-      this.flatterData.forEach(expand)
-      // 必须要nextTick，不然会有一次延迟
-      this.$nextTick(() => {
-        this.resetPool()
-        this.$emit(
-          'filter',
-          this.flatterData.filter(item => item.visible)
-        )
-      })
     },
     resetPool() {
       this.setContainerHeight()
