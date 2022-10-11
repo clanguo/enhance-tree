@@ -1,7 +1,12 @@
 <template>
   <div class="tree">
     <div v-if="enableFilter" class="tree_filter">
-      <input type="text" :value="filterValue" @keyup.enter="filterTree" />
+      <input
+        type="text"
+        :value="filterValue"
+        @keyup.enter="filterTree"
+        placeholder="输入后按回车键搜索"
+      />
     </div>
     <Loading v-if="loading" class="loading"></Loading>
     <div class="tree_container" ref="container" @scroll="onScroll">
@@ -98,7 +103,7 @@ export default {
       defaultExpand: false, // 默认是否展开
       containerOffset: 0, // 滚动容器的Offest
       containerHeight: 0, // 滚动容器的高度
-      firstRender: false, // 是否是第一次渲染
+      firstRender: true, // 是否是第一次渲染
       flatterData: [], // 拍扁后的数组
       initCount: 0, // 用于permance统计第几次初始化数据
       loading: true // 数据正在初始化ing
@@ -108,61 +113,74 @@ export default {
     list: {
       immediate: true,
       handler() {
-        this.initData()
+        this.enableFilter
+          ? this.filterHandle(this.filterValue)
+          : this.initData()
       }
     },
     filterValue: {
       handler(val) {
-        if ((!val && this.firstRender) || !this.enableFilter) return
-
-        const toggleParenVisible = node => {
-          if (node.parent) {
-            node.parent.visible = true
-            node.parent.expand = true
-            toggleParenVisible(node.parent)
-          }
-        }
-
-        this.$nextTick(() => {
-          this.flatterData.forEach(node => {
-            if (!val) {
-              node.visible = node.level === 1
-              node.expand = false
-            } else {
-              let visible = node.content.includes(val)
-              node.visible = visible
-              if (visible) {
-                toggleParenVisible(node)
-              }
-            }
-          })
-          this.resetPool()
-        })
+        this.filterHandle(val)
       }
+    },
+    enableFilter(val) {
+      this.pool = []
+      this.containerOffset = 0
+      this.containerHeight = 0
+      this.flatterData = []
+      // this.firstRender = true
+      // this.initData()
+      val ? this.filterHandle(this.filterValue) : this.initData()
     }
   },
   methods: {
+    filterHandle(val) {
+      this.loading = true
+      if ((!val && this.firstRender) || !this.enableFilter) return
+
+      const toggleParenVisible = node => {
+        if (node.parent) {
+          node.parent.visible = true
+          node.parent.expand = true
+          toggleParenVisible(node.parent)
+        }
+      }
+
+      this.$nextTick(() => {
+        this.setFlatData()
+        this.flatterData.forEach(node => {
+          if (!val) {
+            node.visible = node.level === 1
+            node.expand = false
+          } else {
+            let visible = node.content.includes(val)
+            node.visible = visible
+            if (visible) {
+              toggleParenVisible(node)
+            }
+          }
+        })
+        this.resetPool()
+      })
+    },
     initData() {
       this.loading = true
       setTimeout(() => {
         this.setFlatData()
-        this.loading = false
-        this.setPool()
+        this.resetPool()
       })
     },
     setFlatData() {
+      this.loading = true
+
       let count = this.initCount++
       if (__DEV__) {
         performance.mark('initStart' + count)
       }
-      let filterValue = this.filterValue
+      // let filterValue = this.filterValue
       let list = this.list
       const data = this.flat(list, 1, null)
-      this.flatterData = this.enableFilter
-        ? data.filter(
-            node => node.level === 1 || node.content.indexOf(filterValue) >= 0
-          )
-        : data
+      this.flatterData = data
       // this.resetPool()
       if (__DEV__) {
         performance.mark('initEnd' + count)
@@ -178,6 +196,8 @@ export default {
         performance.clearMarks('initEnd' + count)
         performance.clearMeasures('init' + count)
       }
+
+      // this.loading = false
     },
     // 拍扁一个数组，并添加level,parent,expand,visible属性
     flat(arr, level = 1, parent = null, expand = false) {
@@ -185,7 +205,7 @@ export default {
       arr.forEach(node => {
         node.level = level
         node.parent = parent
-        node.expand = typeof node.expand === 'boolean' ? node.expand : expand
+        node.expand = expand
         // 如果是首次渲染且没有启用节点过滤，则默认展开expandKeys中的节点
         if (this.firstRender && !this.enableFilter) {
           if (this.expandKeys.includes(node[this.keyField])) {
@@ -251,6 +271,8 @@ export default {
         performance.clearMarks('endPool')
         performance.clearMeasures('pool')
       }
+
+      this.loading = false
     },
     toggleExpand(item, value) {
       if (__DEV__) {
@@ -314,6 +336,17 @@ export default {
         }
       }
 
+      const recursionChildren = node => {
+        if (node.children) {
+          return node.children.some(
+            node =>
+              node.content.includes(this.filterValue) || recursionChildren(node)
+          )
+        }
+
+        return false
+      }
+
       list.forEach(node => {
         // 如果启用了节点过滤并且要显示节点
         if (this.enableFilter && value) {
@@ -325,7 +358,8 @@ export default {
             toggleParenVisible(node)
           } else {
             // 不包含则不显示
-            node.visible = false
+            // 递归遍历子节点
+            node.visible = recursionChildren(node)
           }
         } else {
           node.visible = value

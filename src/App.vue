@@ -8,16 +8,22 @@
       v-slot="{ item }"
       :expandKeys="expandKeys"
       :filterValue.sync="filterValue"
+      :enableFilter="useFilter"
     >
       <div class="content">{{ item.content }}</div>
     </tree>
+    <div style="text-align: center">
+      <button @click="toggleFilter">
+        {{ (useFilter ? '禁用' : '启用') + '节点过滤' }}
+      </button>
+    </div>
     <p v-if="loading" style="text-align: center">数据加载中...</p>
   </div>
 </template>
 
 <script>
 import Tree from '@/components/Tree'
-import data from './data.json'
+// import data from './data.json'
 export default {
   name: 'App',
   components: {
@@ -28,18 +34,19 @@ export default {
       list: [],
       filterValue: '',
       expandKeys: [],
-      loading: true
+      loading: true,
+      useFilter: false
     }
   },
   created() {
-    this.list = data
-    this.loading = false
-    // fetch('http://10.188.131.179:5500/data.json')
-    //   .then(r => r.json())
-    //   .then(d => {
-    //     this.list = d
-    //     this.loading = false
-    //   })
+    // this.list = data
+    // this.loading = false
+    fetch('/data.json')
+      .then(r => r.json())
+      .then(d => {
+        this.list = d
+        this.loading = false
+      })
   },
   mounted() {
     window.tree = this.$refs['tree']
@@ -48,13 +55,18 @@ export default {
     //     this.filterValue = '1-2-10'
     //   }, 10000)
     // })
+  },
+  methods: {
+    toggleFilter() {
+      this.useFilter = !this.useFilter
+    }
   }
 }
 </script>
 
 <style scoped>
 .tree {
-  width: 200px;
+  width: 240px;
   height: 400px;
   margin: 10px auto;
   border: 1px solid #ccc;
