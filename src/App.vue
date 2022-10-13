@@ -35,7 +35,7 @@ export default {
       filterValue: '',
       expandKeys: [],
       loading: true,
-      useFilter: false
+      useFilter: true
     }
   },
   created() {

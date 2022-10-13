@@ -10,3 +10,13 @@ export function throttle(callback, duration = 2000) {
     return result
   }
 }
+
+const config = {}
+
+Object.defineProperty(config, '__DEV__', {
+  get() {
+    return !!window.GLOBAL_CONFIG.development
+  }
+})
+
+export const CONFIG = config

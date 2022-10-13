@@ -52,8 +52,7 @@
 
 <script>
 import Loading from './Loading.vue'
-
-const __DEV__ = process.env.NODE_ENV === 'development'
+import { CONFIG } from '@/utils'
 
 export default {
   name: 'Tree',
@@ -106,16 +105,19 @@ export default {
       firstRender: true, // 是否是第一次渲染
       flatterData: [], // 拍扁后的数组
       initCount: 0, // 用于permance统计第几次初始化数据
-      loading: true // 数据正在初始化ing
+      loading: false // 数据正在初始化ing
     }
   },
   watch: {
     list: {
       immediate: true,
       handler() {
-        this.enableFilter
-          ? this.filterHandle(this.filterValue)
-          : this.initData()
+        if (this.enableFilter) {
+          this.firstRender = false
+          this.filterHandle(this.filterValue)
+        } else {
+          this.initData()
+        }
       }
     },
     filterValue: {
@@ -174,7 +176,7 @@ export default {
       this.loading = true
 
       let count = this.initCount++
-      if (__DEV__) {
+      if (CONFIG.__DEV__) {
         performance.mark('initStart' + count)
       }
       // let filterValue = this.filterValue
@@ -182,7 +184,7 @@ export default {
       const data = this.flat(list, 1, null)
       this.flatterData = data
       // this.resetPool()
-      if (__DEV__) {
+      if (CONFIG.__DEV__) {
         performance.mark('initEnd' + count)
         console.log(
           '【init】 duration: %sms',
@@ -226,7 +228,7 @@ export default {
       this.setPool()
     },
     setPool() {
-      if (__DEV__) {
+      if (CONFIG.__DEV__) {
         performance.mark('startPool')
       }
       const height = this.$refs['container'].clientHeight
@@ -261,7 +263,7 @@ export default {
 
       this.pool = result
 
-      if (__DEV__) {
+      if (CONFIG.__DEV__) {
         performance.mark('endPool')
         console.log(
           '【pool】 duration: %sms',
@@ -275,13 +277,13 @@ export default {
       this.loading = false
     },
     toggleExpand(item, value) {
-      if (__DEV__) {
+      if (CONFIG.__DEV__) {
         performance.mark('startToggleExpand')
       }
       value ? this.expand(item) : this.collapse(item)
       this.toggleVisible(item.children || [], value)
       this.resetPool()
-      if (__DEV__) {
+      if (CONFIG.__DEV__) {
         performance.mark('endToggleExpand')
         console.log(
           '【toggleExpand】 duration: %sms',
@@ -309,11 +311,18 @@ export default {
     // 对外暴露使用，展开所有节点
     expandAll() {
       this.flatterData.forEach(node => {
-        node.expand = true
-        node.visible = true
+        if (!this.enableFilter || !this.filterValue) {
+          node.expand = true
+          node.visible = true
+        } else {
+          if (node.level === 1 && node.visible) {
+            node.expand = true
+            this.toggleVisible(node.children || [], true, true)
+          }
+        }
       })
       // 安全起见，等到挂载完有DOM后再调用
-      this.$nextTick(() => {
+      setTimeout(() => {
         this.resetPool()
       })
     },
@@ -321,14 +330,18 @@ export default {
     collapseAll() {
       this.flatterData.forEach(node => {
         node.expand = false
-        node.visible = node.level === 1
+        if (!this.enableFilter || !this.filterValue) {
+          node.visible = node.level == 1
+        } else {
+          node.visible = node.level === 1 && node.visible
+        }
       })
-      this.$nextTick(() => {
+      setTimeout(() => {
         this.resetPool()
       })
     },
     // 递归切换节点可视性
-    toggleVisible(list, value) {
+    toggleVisible(list, value, toggleAll = false) {
       const toggleParenVisible = node => {
         if (node.parent) {
           node.parent.visible = true
@@ -338,10 +351,10 @@ export default {
 
       const recursionChildren = node => {
         if (node.children) {
-          return node.children.some(
-            node =>
-              node.content.includes(this.filterValue) || recursionChildren(node)
-          )
+          return node.children.some(n => {
+            const hasInclude = n.content.includes(this.filterValue)
+            return hasInclude || recursionChildren(n)
+          })
         }
 
         return false
@@ -360,6 +373,10 @@ export default {
             // 不包含则不显示
             // 递归遍历子节点
             node.visible = recursionChildren(node)
+            if (node.visible && toggleAll) {
+              node.expand = true
+              node.children && this.toggleVisible(node.children, true, true)
+            }
           }
         } else {
           node.visible = value
