@@ -137,7 +137,7 @@ export default {
   },
   methods: {
     filterHandle(val) {
-      this.loading = true
+      // this.loading = true
       if ((!val && this.firstRender) || !this.enableFilter) return
 
       const toggleParenVisible = node => {
@@ -147,8 +147,8 @@ export default {
           toggleParenVisible(node.parent)
         }
       }
-
-      this.$nextTick(() => {
+      this.loading = true
+      setTimeout(() => {
         this.setFlatData()
         this.flatterData.forEach(node => {
           if (!val) {
@@ -162,6 +162,9 @@ export default {
             }
           }
         })
+        setTimeout(() => {
+          this.loading = false
+        })
         this.resetPool()
       })
     },
@@ -169,11 +172,14 @@ export default {
       this.loading = true
       setTimeout(() => {
         this.setFlatData()
+        setTimeout(() => {
+          this.loading = false
+        })
         this.resetPool()
       })
     },
     setFlatData() {
-      this.loading = true
+      // this.loading = true
 
       let count = this.initCount++
       if (CONFIG.__DEV__) {
@@ -199,7 +205,11 @@ export default {
         performance.clearMeasures('init' + count)
       }
 
-      // this.loading = false
+      // setTimeout(() => {
+      // this.$nextTick(() => {
+      this.loading = false
+      // })
+      // })
     },
     // 拍扁一个数组，并添加level,parent,expand,visible属性
     flat(arr, level = 1, parent = null, expand = false) {
@@ -261,7 +271,9 @@ export default {
         this.firstRender = false
       }
 
-      this.pool = result
+      setTimeout(() => {
+        this.pool = result
+      })
 
       if (CONFIG.__DEV__) {
         performance.mark('endPool')
@@ -273,8 +285,6 @@ export default {
         performance.clearMarks('endPool')
         performance.clearMeasures('pool')
       }
-
-      this.loading = false
     },
     toggleExpand(item, value) {
       if (CONFIG.__DEV__) {

@@ -16,6 +16,8 @@
       <button @click="toggleFilter">
         {{ (useFilter ? '禁用' : '启用') + '节点过滤' }}
       </button>
+      <button @click="expandTree">一键展开</button>
+      <button @click="collapseTree">一键收起</button>
     </div>
     <p v-if="loading" style="text-align: center">数据加载中...</p>
   </div>
@@ -34,13 +36,13 @@ export default {
       list: [],
       filterValue: '',
       expandKeys: [],
-      loading: true,
+      loading: false,
       useFilter: true
     }
   },
   created() {
     // this.list = data
-    // this.loading = false
+    this.loading = true
     fetch('/data.json')
       .then(r => r.json())
       .then(d => {
@@ -59,6 +61,20 @@ export default {
   methods: {
     toggleFilter() {
       this.useFilter = !this.useFilter
+    },
+    expandTree() {
+      if (this.$refs.tree) {
+        this.$nextTick(() => {
+          this.$refs.tree.expandAll()
+        })
+      }
+    },
+    collapseTree() {
+      if (this.$refs.tree) {
+        this.$nextTick(() => {
+          this.$refs.tree.collapseAll()
+        })
+      }
     }
   }
 }
