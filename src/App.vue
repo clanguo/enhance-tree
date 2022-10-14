@@ -35,7 +35,7 @@ export default {
     return {
       list: [],
       filterValue: '',
-      expandKeys: [],
+      expandKeys: ['db00'],
       loading: false,
       useFilter: true
     }

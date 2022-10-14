@@ -102,43 +102,43 @@ export default {
       defaultExpand: false, // 默认是否展开
       containerOffset: 0, // 滚动容器的Offest
       containerHeight: 0, // 滚动容器的高度
-      firstRender: true, // 是否是第一次渲染
       flatterData: [], // 拍扁后的数组
       initCount: 0, // 用于permance统计第几次初始化数据
-      loading: false // 数据正在初始化ing
+      loading: false, // 数据正在初始化ing
+      firstRenderExpandKeys: [], // 第一次渲染时默认展开的节点，仅在第一次渲染时有效
+      firstRender: true // 是否是第一次渲染，第一次渲染时需要判断是否展开节点
     }
+  },
+  created() {
+    this.firstRenderExpandKeys = this.expandKeys.map(i => i)
   },
   watch: {
     list: {
       immediate: true,
       handler() {
-        if (this.enableFilter) {
-          this.firstRender = false
-          this.filterHandle(this.filterValue)
-        } else {
-          this.initData()
-        }
+        this.filterHandle(this.filterValue)
       }
     },
     filterValue: {
       handler(val) {
-        this.filterHandle(val)
+        this.enableFilter && this.filterHandle(val)
       }
     },
-    enableFilter(val) {
+    enableFilter() {
       this.pool = []
       this.containerOffset = 0
       this.containerHeight = 0
       this.flatterData = []
-      // this.firstRender = true
-      // this.initData()
-      val ? this.filterHandle(this.filterValue) : this.initData()
+      this.firstRender = true
+      this.filterHandle(this.filterValue)
     }
   },
   methods: {
     filterHandle(val) {
-      // this.loading = true
-      if ((!val && this.firstRender) || !this.enableFilter) return
+      if (!val || !this.enableFilter) {
+        this.initData()
+        return
+      }
 
       const toggleParenVisible = node => {
         if (node.parent) {
@@ -179,16 +179,16 @@ export default {
       })
     },
     setFlatData() {
-      // this.loading = true
-
       let count = this.initCount++
       if (CONFIG.__DEV__) {
         performance.mark('initStart' + count)
       }
-      // let filterValue = this.filterValue
       let list = this.list
       const data = this.flat(list, 1, null)
       this.flatterData = data
+      if (data.length) {
+        this.firstRender = false
+      }
       // this.resetPool()
       if (CONFIG.__DEV__) {
         performance.mark('initEnd' + count)
@@ -204,12 +204,6 @@ export default {
         performance.clearMarks('initEnd' + count)
         performance.clearMeasures('init' + count)
       }
-
-      // setTimeout(() => {
-      // this.$nextTick(() => {
-      this.loading = false
-      // })
-      // })
     },
     // 拍扁一个数组，并添加level,parent,expand,visible属性
     flat(arr, level = 1, parent = null, expand = false) {
@@ -220,7 +214,7 @@ export default {
         node.expand = expand
         // 如果是首次渲染且没有启用节点过滤，则默认展开expandKeys中的节点
         if (this.firstRender && !this.enableFilter) {
-          if (this.expandKeys.includes(node[this.keyField])) {
+          if (this.firstRenderExpandKeys.includes(node[this.keyField])) {
             node.expand = true
           }
         }
@@ -306,12 +300,10 @@ export default {
         performance.clearMeasures('【toggleExpand】')
       }
     },
-    // 对外暴露使用，展开节点
     expand(item) {
       item.expand = true
       this.$emit('expand', item)
     },
-    // 对外暴露使用，收起节点
     collapse(item) {
       item.expand = false
       this.$emit('collapse', item)
@@ -399,7 +391,7 @@ export default {
     // 对外暴露使用，切换是否选择节点
     toggleChecked(node, value) {
       this.setChecked(node, value)
-      this.$emit('checked', value)
+      this.$emit('checked', node, value)
       this.resetPool()
     },
     // 设置节点选中
