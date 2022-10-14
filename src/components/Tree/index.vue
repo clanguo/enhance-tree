@@ -271,9 +271,7 @@ export default {
         this.firstRender = false
       }
 
-      setTimeout(() => {
-        this.pool = result
-      })
+      this.pool = result
 
       if (CONFIG.__DEV__) {
         performance.mark('endPool')
