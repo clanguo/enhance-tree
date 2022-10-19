@@ -102,7 +102,7 @@ export default {
       defaultExpand: false, // 默认是否展开
       containerOffset: 0, // 滚动容器的Offest
       containerHeight: 0, // 滚动容器的高度
-      flatterData: [], // 拍扁后的数组
+      // flatterData: [], // 拍扁后的数组
       initCount: 0, // 用于permance统计第几次初始化数据
       loading: false, // 数据正在初始化ing
       firstRenderExpandKeys: [], // 第一次渲染时默认展开的节点，仅在第一次渲染时有效
@@ -185,7 +185,7 @@ export default {
       }
       let list = this.list
       const data = this.flat(list, 1, null)
-      this.flatterData = data
+      this.flatterData = Object.freeze(data)
       if (data.length) {
         this.firstRender = false
       }
@@ -265,7 +265,8 @@ export default {
         this.firstRender = false
       }
 
-      this.pool = result
+      this.pool = Object.freeze(result)
+      // this.pool = result
 
       if (CONFIG.__DEV__) {
         performance.mark('endPool')

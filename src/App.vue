@@ -44,10 +44,23 @@ export default {
     // this.list = data
     this.loading = true
     fetch('/data.json')
-      .then(r => r.json())
+      .then(r => {
+        performance.mark('initJson')
+        return r.json()
+      })
       .then(d => {
-        this.list = d
+        performance.mark('endJson')
+        console.log(
+          '【json】 duration: %sms',
+          performance.measure('json', 'initJson', 'endJson').duration
+        )
+        this.list = Object.freeze(d)
         this.loading = false
+        performance.mark('endCreated')
+        console.log(
+          '【created】 duration: %sms',
+          performance.measure('created', 'endJson', 'endCreated').duration
+        )
       })
   },
   mounted() {
