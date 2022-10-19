@@ -110,7 +110,7 @@ export default {
       defaultExpand: false, // 默认是否展开
       containerOffset: 0, // 滚动容器的Offest
       containerHeight: 0, // 滚动容器的高度
-      flatterData: [], // 拍扁后的数组
+      // flatterData: [], // 拍扁后的数组
       initCount: 0, // 用于permance统计第几次初始化数据
       loading: false, // 数据正在初始化ing
       firstRenderExpandKeys: [], // 第一次渲染时默认展开的节点，仅在第一次渲染时有效
@@ -217,6 +217,14 @@ export default {
     flat(arr, level = 1, parent = null, expand = false) {
       let result = []
       arr.forEach(node => {
+        // const node = {
+        //   level,
+        //   parent,
+        //   expand,
+        //   [this.keyField]: item[this.keyField],
+        //   [this.textField]: item[this.textField],
+        //   [this.childrenField]: item[this.childrenField]
+        // }
         node.level = level
         node.parent = parent
         node.expand = expand
