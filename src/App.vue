@@ -4,13 +4,15 @@
       ref="tree"
       class="tree"
       :list="list"
-      keyField="id"
+      keyField="i"
+      textField="t"
+      childrenField="c"
       v-slot="{ item }"
       :expandKeys="expandKeys"
       :filterValue.sync="filterValue"
       :enableFilter="useFilter"
     >
-      <div class="content">{{ item.content }}</div>
+      <div class="content">选项{{ item.t }}</div>
     </tree>
     <div style="text-align: center">
       <button @click="toggleFilter">

@@ -27,7 +27,7 @@
           >
             <div class="tree_node--content" :style="`--level: ${item.level}`">
               <span
-                v-if="item.children?.length"
+                v-if="item[childrenField]?.length"
                 class="tree_node__expand-btn"
                 :class="item.expand ? 'tree_node--expand' : 'tree_node--close'"
                 @click="toggleExpand(item, !item.expand)"
@@ -67,6 +67,14 @@ export default {
     keyField: {
       type: String,
       default: 'id'
+    },
+    textField: {
+      type: String,
+      default: 'text'
+    },
+    childrenField: {
+      type: String,
+      default: 'children'
     },
     itemHeight: {
       type: Number,
@@ -155,7 +163,7 @@ export default {
             node.visible = node.level === 1
             node.expand = false
           } else {
-            let visible = node.content.includes(val)
+            let visible = node[this.textField].includes(val)
             node.visible = visible
             if (visible) {
               toggleParenVisible(node)
@@ -209,6 +217,14 @@ export default {
     flat(arr, level = 1, parent = null, expand = false) {
       let result = []
       arr.forEach(node => {
+        // const node = {
+        //   level,
+        //   parent,
+        //   expand,
+        //   [this.keyField]: item[this.keyField],
+        //   [this.textField]: item[this.textField],
+        //   [this.childrenField]: item[this.childrenField]
+        // }
         node.level = level
         node.parent = parent
         node.expand = expand
@@ -222,8 +238,10 @@ export default {
         node.visible = node.level === 1 || (parent?.expand && parent?.visible)
 
         result.push(node)
-        node?.children?.length &&
-          (result = result.concat(this.flat(node.children, level + 1, node)))
+        node?.[this.childrenField]?.length &&
+          (result = result.concat(
+            this.flat(node[this.childrenField], level + 1, node)
+          ))
       })
 
       return result
@@ -284,7 +302,7 @@ export default {
         performance.mark('startToggleExpand')
       }
       value ? this.expand(item) : this.collapse(item)
-      this.toggleVisible(item.children || [], value)
+      this.toggleVisible(item[this.childrenField] || [], value)
       this.resetPool()
       if (CONFIG.__DEV__) {
         performance.mark('endToggleExpand')
@@ -318,7 +336,7 @@ export default {
         } else {
           if (node.level === 1 && node.visible) {
             node.expand = true
-            this.toggleVisible(node.children || [], true, true)
+            this.toggleVisible(node[this.childrenField] || [], true, true)
           }
         }
       })
@@ -351,9 +369,9 @@ export default {
       }
 
       const recursionChildren = node => {
-        if (node.children) {
-          return node.children.some(n => {
-            const hasInclude = n.content.includes(this.filterValue)
+        if (node[this.childrenField]) {
+          return node[this.childrenField].some(n => {
+            const hasInclude = n[this.textField].includes(this.filterValue)
             return hasInclude || recursionChildren(n)
           })
         }
@@ -365,7 +383,7 @@ export default {
         // 如果启用了节点过滤并且要显示节点
         if (this.enableFilter && value) {
           // 如果当前节点包含搜索内容
-          if (node.content.includes(this.filterValue)) {
+          if (node[this.textField].includes(this.filterValue)) {
             // 是否显示要依据父节点是否展开
             node.visible = node.parent ? node.parent.expand : true
             // 如果包含了搜索内容，则应该向上显示父级
@@ -376,7 +394,8 @@ export default {
             node.visible = recursionChildren(node)
             if (node.visible && toggleAll) {
               node.expand = true
-              node.children && this.toggleVisible(node.children, true, true)
+              node[this.childrenField] &&
+                this.toggleVisible(node[this.childrenField], true, true)
             }
           }
         } else {
@@ -384,8 +403,8 @@ export default {
         }
 
         // 如果当前节点有子节点并且已展开或者已启用节点过滤，则递归切换子节点是否显示
-        if (node.children && (node.expand || node.enableFilter)) {
-          this.toggleVisible(node.children, value)
+        if (node[this.childrenField] && (node.expand || node.enableFilter)) {
+          this.toggleVisible(node[this.childrenField], value)
         }
       })
     },
@@ -407,7 +426,9 @@ export default {
       if (!node.parent) return
       let parentChecked
       if (value) {
-        parentChecked = !node.parent.children.some(i => i.checked !== true)
+        parentChecked = !node.parent[this.childrenField].some(
+          i => i.checked !== true
+        )
       } else {
         parentChecked = false
       }
@@ -415,8 +436,8 @@ export default {
       this.setParentChecked(node.parent, parentChecked)
     },
     setChildrenChecked(node, value) {
-      if (!node.children) return
-      node.children.forEach(i => {
+      if (!node[this.childrenField]) return
+      node[this.childrenField].forEach(i => {
         i.checked = value
         this.setChildrenChecked(i, value)
       })

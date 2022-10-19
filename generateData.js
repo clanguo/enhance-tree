@@ -3,25 +3,25 @@ const fs = require('fs')
 let result = []
 
 function generateId() {
-  return Math.random().toString(16).slice(2)
+  return Math.random().toString(16).slice(2, 6)
 }
 
-for (let i = 0; i < 10; i++) {
-  result[i] = {
-    id: generateId(),
-    content: `选项${i + 1}`,
-    children: []
+for (let m = 0; m < 10; m++) {
+  result[m] = {
+    i: generateId(),
+    t: `${m + 1}`,
+    c: []
   }
   for (let j = 0; j < 100; j++) {
-    result[i].children[j] = {
-      id: generateId(),
-      content: `选项${i + 1}-${j + 1}`,
-      children: []
+    result[m].c[j] = {
+      i: generateId(),
+      t: `${m + 1}-${j + 1}`,
+      c: []
     }
-    for (let m = 0; m < 10; m++) {
-      result[i].children[j].children[m] = {
-        id: generateId(),
-        content: `选项${i + 1}-${j + 1}-${m + 1}`
+    for (let n = 0; n < 1000; n++) {
+      result[m].c[j].c[n] = {
+        i: generateId(),
+        t: `${m + 1}-${j + 1}-${n + 1}`
       }
     }
   }
