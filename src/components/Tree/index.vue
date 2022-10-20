@@ -4,9 +4,18 @@
       <input
         type="text"
         :value="filterValue"
-        @keyup.enter="filterTree"
-        placeholder="输入后按回车键搜索"
+        ref="inputRef"
+        @keyup.enter="filterTree($event.target.value)"
+        placeholder="输入后按回车键或点击搜索按钮搜索"
       />
+      <el-button
+        type="primary"
+        icon="el-icon-search"
+        size="small"
+        class="tree_filter--btn"
+        @click.native="filterTree($refs.inputRef.value)"
+        >搜索</el-button
+      >
     </div>
     <Loading v-if="loading" class="loading"></Loading>
     <div class="tree_container" ref="container" @scroll="onScroll">
@@ -32,14 +41,19 @@
                 :class="item.expand ? 'tree_node--expand' : 'tree_node--close'"
                 @click="toggleExpand(item, !item.expand)"
               ></span>
+
               <span v-else class="tree_node--blank"></span>
-              <input
+              <el-checkbox
                 v-if="!enableFilter"
                 type="checkbox"
-                :checked="item.checked"
-                @change="toggleChecked(item, !item.checked)"
-              />
-              <div class="tree_node--slot">
+                v-model="item.checked"
+                @change="toggleChecked(item, item.checked)"
+              >
+                <div class="tree_node--slot">
+                  <slot :item="item"></slot>
+                </div>
+              </el-checkbox>
+              <div v-else class="tree_node--slot">
                 <slot :item="item"></slot>
               </div>
             </div>
@@ -201,7 +215,7 @@ export default {
       if (CONFIG.__DEV__) {
         performance.mark('initEnd' + count)
         console.log(
-          '【init】 duration: %sms',
+          '【拍扁数组】 duration: %sms',
           performance.measure(
             'init' + count,
             'initStart' + count,
@@ -217,17 +231,9 @@ export default {
     flat(arr, level = 1, parent = null, expand = false) {
       let result = []
       arr.forEach(node => {
-        // const node = {
-        //   level,
-        //   parent,
-        //   expand,
-        //   [this.keyField]: item[this.keyField],
-        //   [this.textField]: item[this.textField],
-        //   [this.childrenField]: item[this.childrenField]
-        // }
-        node.level = level
         node.parent = parent
         node.expand = expand
+        node.checked = false
         // 如果是首次渲染且没有启用节点过滤，则默认展开expandKeys中的节点
         if (this.firstRender && !this.enableFilter) {
           if (this.firstRenderExpandKeys.includes(node[this.keyField])) {
@@ -289,7 +295,7 @@ export default {
       if (CONFIG.__DEV__) {
         performance.mark('endPool')
         console.log(
-          '【pool】 duration: %sms',
+          '【计算渲染池】 duration: %sms',
           performance.measure('pool', 'startPool', 'endPool').duration
         )
         performance.clearMarks('startPool')
@@ -307,7 +313,7 @@ export default {
       if (CONFIG.__DEV__) {
         performance.mark('endToggleExpand')
         console.log(
-          '【toggleExpand】 duration: %sms',
+          '【切换节点展开】 duration: %sms',
           performance.measure(
             '【toggleExpand】',
             'startToggleExpand',
@@ -450,8 +456,7 @@ export default {
       this.containerHeight = len * this.itemHeight
     },
     // 搜索过滤节点，输入框内回车时调用
-    filterTree(event) {
-      let val = event.target.value
+    filterTree(val) {
       // 如果两次回车时的值一样，不更新
       if (this.filterValue === val) return
       this.$emit('update:filterValue', val)
@@ -473,13 +478,13 @@ export default {
 }
 
 .tree_filter {
-  /* flex: 0 0 50px; */
+  display: flex;
   flex: 0;
   padding: 5px;
 }
 
 .tree_filter input {
-  width: 100%;
+  flex: 1;
   box-sizing: border-box;
   padding: 4px 8px;
   font-size: 12px;
@@ -489,18 +494,25 @@ export default {
   color: #495060;
   background-color: #fff;
   background-image: none;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .tree_filter input:focus {
   border-color: #54a4ff;
   outline: 0;
-  box-shadow: 0 0 0 2px rgb(41 141 255 / 20%);
+}
+
+.tree_filter--btn {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
 }
 
 .tree_container {
   flex: 1;
   position: relative;
   overflow: auto;
+  scroll-behavior: smooth;
 }
 
 .tree_scroll {
@@ -515,7 +527,16 @@ export default {
   display: flex;
   justify-content: flex-start;
   align-items: center;
-  padding-left: calc(var(--level) * 10px);
+  padding-left: calc(var(--level) * 15px);
+}
+
+.tree_node--content:deep(.el-checkbox__input) {
+  line-height: inherit;
+  vertical-align: inherit;
+}
+
+.tree_node--content:deep(.el-checkbox__label) {
+  line-height: inherit;
 }
 
 .tree_node__expand-btn {
@@ -527,11 +548,12 @@ export default {
   cursor: pointer;
   border-left-color: #ccc;
   will-change: transform;
-  transform: rotateZ(0);
+  transform: rotate(0);
+  transition: transform 0.1s ease-in-out;
 }
 
 .tree_node--expand {
-  transform: rotateZ(90deg);
+  transform: rotate(90deg);
 }
 
 .tree_node--slot {
