@@ -3,7 +3,7 @@ const fs = require('fs')
 let result = []
 
 function generateId() {
-  return Math.random().toString(16).slice(2, 6)
+  return Math.random().toString(16).slice(2, 7)
 }
 
 for (let m = 0; m < 10; m++) {
