@@ -108,5 +108,6 @@ export default {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: #000;
+  user-select: none;
 }
 </style>
