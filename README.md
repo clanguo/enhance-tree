@@ -1,19 +1,21 @@
 # high-performance
 
-通过虚拟渲染支持百万级数据渲染
+通过虚拟渲染支持百万级数据渲染的高性能树组件
 
 ## 属性 props
 
-| 参数                | 说明                                         | 类型    | 是否必填 | 默认值 | 示例                                                 |
-| ------------------- | -------------------------------------------- | ------- | -------- | ------ | ---------------------------------------------------- |
-| list                | 展示数据                                     | Array   | N        | []     | [{ content: '选项1-1-1'，id: 'asdf', children: [] }] |
-| keyField            | 每个节点的唯一标识的键名                     | String  | N        | 'id'   | 'id'                                                 |
-| itemHeight          | 节点固定高度，单位px                         | Number  | N        | 30     | 30                                                   |
-| prev                | 虚拟列表前多渲染的个数，必须大于0            | Number  | N        | 5      | 5                                                    |
-| next                | 虚拟列表后多渲染的个数，必须大于0            | Number  | N        | 5      | 5                                                    |
-| enableFilter        | 是否启用节点过滤功能                         | Boolean | N        | false  | false                                                |
-| filterValue/v-model | 节点过滤的内容，仅在enableFilter为true时有效 | String  | N        | ''     | '1-1'                                                |
-| expandKeys          | 第一次渲染时默认展开的节点的keyField值       | Array   | N        | []     | ['asdf']                                             |
+| 参数                | 说明                                         | 类型    | 是否必填 | 默认值     | 示例                                                 |
+| ------------------- | -------------------------------------------- | ------- | -------- | ---------- | ---------------------------------------------------- |
+| list                | 展示数据                                     | Array   | N        | []         | [{ content: '选项1-1-1'，id: 'asdf', children: [] }] |
+| keyField            | 每个节点的唯一标识的键名                     | String  | N        | 'id'       | 'id'                                                 |
+| textField           | 每个节点的文本内容的键名                     | String  | N        | 'text'     | 'text'                                               |
+| childrenField       | 每个节点的子节点的键名                       | String  | N        | 'children' | 'children'                                           |
+| itemHeight          | 节点固定高度，单位px                         | Number  | N        | 30         | 30                                                   |
+| prev                | 虚拟列表前多渲染的个数，必须大于0            | Number  | N        | 5          | 5                                                    |
+| next                | 虚拟列表后多渲染的个数，必须大于0            | Number  | N        | 5          | 5                                                    |
+| enableFilter        | 是否启用节点过滤功能                         | Boolean | N        | false      | false                                                |
+| filterValue/v-model | 节点过滤的内容，仅在enableFilter为true时有效 | String  | N        | ''         | '1-1'                                                |
+| expandKeys          | 第一次渲染时默认展开的节点的keyField值       | Array   | N        | []         | ['asdf']                                             |
 
 ## 插槽 Slot
 
@@ -35,7 +37,7 @@
 | 事件名             | 说明                                                         | 事件参数                               |
 | ------------------ | ------------------------------------------------------------ | -------------------------------------- |
 | update:filterValue | 可用于v-model，启用节点过滤且输入框内按下回车后触发，输入两次按下回车时的输入框内容没有发生变化，不触发 | val：输入框内容                        |
-| update             | 渲染树重新渲染时触发                                         | newPool: 新的渲染树，oldPool: 旧渲染树 |
+| update             | 渲染树重新渲染时触发                                         | newPool: 新的渲染池，oldPool: 旧渲染池 |
 | expand             | 展开节点时触发                                               | item: 展开的节点                       |
 | collapse           | 节点收起时触发                                               | item: 收起的节点                       |
 | checked            | 选择节点时触发                                               | item: 选择的节点，value: 是否选中      |

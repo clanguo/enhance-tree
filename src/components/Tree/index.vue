@@ -53,7 +53,12 @@
                   <slot :item="item"></slot>
                 </div>
               </el-checkbox>
-              <div v-else class="tree_node--slot">
+              <div
+                v-else
+                class="tree_node--slot"
+                style="display: inline-block"
+                @click="toggleExpand(item, !item.expand)"
+              >
                 <slot :item="item"></slot>
               </div>
             </div>
@@ -72,6 +77,10 @@ export default {
   name: 'Tree',
   components: {
     Loading
+  },
+  model: {
+    prop: 'filterValue',
+    event: 'update:filterValue'
   },
   props: {
     list: {
@@ -546,7 +555,7 @@ export default {
   width: 0;
   height: 0;
   margin-right: 5px;
-  border: 5px solid transparent;
+  border: 8px solid transparent;
   cursor: pointer;
   border-left-color: #ccc;
   will-change: transform;
@@ -559,9 +568,8 @@ export default {
 }
 
 .tree_node--slot {
-  flex: 1;
-  width: 100%;
   overflow: hidden;
+  cursor: pointer;
 }
 
 .tree_node--blank {
