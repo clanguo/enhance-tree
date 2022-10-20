@@ -207,7 +207,8 @@ export default {
       }
       let list = this.list
       const data = this.flat(list, 1, null)
-      this.flatterData = Object.freeze(data)
+      // this.flatterData = Object.freeze(data)
+      this.flatterData = data
       if (data.length) {
         this.firstRender = false
       }
