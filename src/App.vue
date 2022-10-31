@@ -1,101 +1,101 @@
 <template>
-  <div
-    id="app"
-    v-loading="loading"
-    element-loading-text="数据下载中..."
-    element-loading-spinner="el-icon-loading"
-  >
-    <tree
-      ref="tree"
-      class="tree"
-      :list="list"
-      keyField="i"
-      textField="t"
-      childrenField="c"
-      v-slot="{ item }"
-      :expandKeys="expandKeys"
-      :filterValue.sync="filterValue"
-      :enableFilter="useFilter"
-    >
-      <div class="content">选项{{ item.t }}</div>
-    </tree>
-    <div style="text-align: center">
-      <el-button type="primary" @click="toggleFilter">
-        {{ (useFilter ? '禁用' : '启用') + '节点过滤' }}
-      </el-button>
-      <el-button type="primary" @click="expandTree">一键展开</el-button>
-      <el-button type="primary" @click="collapseTree">一键收起</el-button>
-    </div>
+  <div id="app">
+    <el-container class="el-container">
+      <el-aside width="240px" class="el-aside">
+        <h1>树组件功能菜单</h1>
+        <el-menu
+          :default-active="$route.path"
+          class="el-menu-vertical"
+          background-color="#545c64"
+          text-color="#fff"
+          active-text-color="#409EFF"
+          router
+        >
+          <el-menu-item index="/">
+            <template slot="title">
+              <span>首页</span>
+            </template>
+          </el-menu-item>
+          <el-menu-item index="/generalTree">
+            <span>普通树</span>
+          </el-menu-item>
+          <el-menu-item index="/treeFilter">
+            <span slot="title">节点搜索</span>
+          </el-menu-item>
+          <el-menu-item index="/defaultExpand">
+            <span slot="title">默认展开</span>
+          </el-menu-item>
+          <el-menu-item index="/customNode">
+            <span slot="title">自定义节点内容</span>
+          </el-menu-item>
+          <el-menu-item index="/selectNode">
+            <span slot="title">节点选择与联动</span>
+          </el-menu-item>
+          <el-menu-item index="/disableNode">
+            <span slot="title">禁用节点</span>
+          </el-menu-item>
+        </el-menu>
+      </el-aside>
+      <el-main>
+        <router-view></router-view>
+      </el-main>
+    </el-container>
   </div>
 </template>
 
 <script>
-import Tree from '@/components/Tree'
 export default {
   name: 'App',
-  components: {
-    Tree
-  },
   data() {
     return {
-      list: [],
       filterValue: '',
       expandKeys: ['3cf46', '07217'],
       loading: false,
       useFilter: true
     }
-  },
-  created() {
-    this.loading = true
-    performance.mark('initJson')
-    fetch('/data.json')
-      .then(r => {
-        return r.json()
-      })
-      .then(d => {
-        performance.mark('endJson')
-        console.log(
-          '【加载json文件】 duration: %sms',
-          performance.measure('json', 'initJson', 'endJson').duration
-        )
-        this.list = Object.freeze(d)
-        // this.list = d
-        this.loading = false
-        performance.mark('endCreated')
-        console.log(
-          '【数据响应式】 duration: %sms',
-          performance.measure('created', 'endJson', 'endCreated').duration
-        )
-      })
-  },
-  mounted() {
-    window.tree = this.$refs['tree']
-  },
-  methods: {
-    toggleFilter() {
-      this.useFilter = !this.useFilter
-    },
-    expandTree() {
-      if (this.$refs.tree) {
-        this.$nextTick(() => {
-          this.$refs.tree.expandAll()
-        })
-      }
-    },
-    collapseTree() {
-      if (this.$refs.tree) {
-        this.$nextTick(() => {
-          this.$refs.tree.collapseAll()
-        })
-      }
-    }
   }
 }
 </script>
 
-<style scoped>
+<style>
+body {
+  margin: 0;
+}
+
+#app {
+  width: 100vw;
+  height: 100vh;
+}
+
+.el-container {
+  width: 100%;
+  height: 100%;
+}
+
+.el-container .is-active {
+  background-color: #ecf5ff;
+}
+
+.el-aside {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.el-aside h1 {
+  background-color: #545c64;
+  text-align: center;
+  border-bottom: 1px solid #ccc;
+  margin: 0;
+  padding: 15px 0;
+}
+
+.el-menu-vertical {
+  height: 100%;
+}
+
 .tree {
-  width: 400px;
+  width: 600px;
   height: 400px;
   margin: 10px auto;
   border: 1px solid #ccc;

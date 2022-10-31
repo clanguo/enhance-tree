@@ -35,31 +35,36 @@
             }"
           >
             <div class="tree_node--content" :style="`--level: ${item.level}`">
-              <span
-                v-if="item[childrenField]?.length"
-                class="tree_node__expand-btn"
-                :class="item.expand ? 'tree_node--expand' : 'tree_node--close'"
-                @click="toggleExpand(item, !item.expand)"
-              ></span>
+              <div class="tree_node--container">
+                <span
+                  v-if="item[childrenField]?.length"
+                  class="tree_node__expand-btn"
+                  :class="
+                    item.expand ? 'tree_node--expand' : 'tree_node--close'
+                  "
+                  @click="toggleExpand(item, !item.expand)"
+                ></span>
 
-              <span v-else class="tree_node--blank"></span>
-              <el-checkbox
-                v-if="!enableFilter"
-                type="checkbox"
-                v-model="item.checked"
-                @change="toggleChecked(item, item.checked)"
-              >
-                <div class="tree_node--slot">
+                <span v-else class="tree_node--blank"></span>
+                <el-checkbox
+                  v-if="!enableFilter"
+                  type="checkbox"
+                  :value="item.checked && !item.disable"
+                  @change="!item.disable && toggleChecked(item, !item.checked)"
+                  :disabled="item.disable"
+                >
+                  <div class="tree_node--slot">
+                    <slot :item="item"></slot>
+                  </div>
+                </el-checkbox>
+                <div
+                  v-else
+                  class="tree_node--slot"
+                  style="display: inline-block"
+                  @click="toggleExpand(item, !item.expand)"
+                >
                   <slot :item="item"></slot>
                 </div>
-              </el-checkbox>
-              <div
-                v-else
-                class="tree_node--slot"
-                style="display: inline-block"
-                @click="toggleExpand(item, !item.expand)"
-              >
-                <slot :item="item"></slot>
               </div>
             </div>
           </div>
@@ -125,12 +130,23 @@ export default {
     expandKeys: {
       type: Array,
       default: () => []
+    },
+    defaultExpand: {
+      type: Boolean,
+      default: false
+    },
+    defaultChecked: {
+      type: Boolean,
+      default: false
+    },
+    defaultDisable: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
     return {
       pool: [], // 渲染池, { item: 内容, level: 层级, visible: 是否显示, expand: 是否展开, parent: 父节点, children: 子节点 }
-      defaultExpand: false, // 默认是否展开
       containerOffset: 0, // 滚动容器的Offest
       containerHeight: 0, // 滚动容器的高度
       // flatterData: [], // 拍扁后的数组
@@ -215,13 +231,17 @@ export default {
         performance.mark('initStart' + count)
       }
       let list = this.list
-      const data = this.flat(list, 1, null)
-      // this.flatterData = Object.freeze(data)
+      const data = this.flat(
+        list,
+        1,
+        null,
+        this.defaultExpand,
+        this.defaultChecked
+      )
       this.flatterData = data
       if (data.length) {
         this.firstRender = false
       }
-      // this.resetPool()
       if (CONFIG.__DEV__) {
         performance.mark('initEnd' + count)
         console.log(
@@ -238,13 +258,26 @@ export default {
       }
     },
     // 拍扁一个数组，并添加level,parent,expand,visible属性
-    flat(arr, level = 1, parent = null, expand = false) {
+    flat(
+      arr,
+      level = 1,
+      parent = null,
+      defaultExpand = false,
+      defaultChecked = false,
+      defaultDisable = false
+    ) {
       let result = []
       arr.forEach(node => {
+        const {
+          expand = defaultExpand,
+          checked = defaultChecked,
+          disable = defaultDisable
+        } = node
         node.parent = parent
         node.expand = expand
-        node.checked = false
+        node.checked = checked
         node.level = level
+        node.disable = disable
         // 如果是首次渲染且没有启用节点过滤，则默认展开expandKeys中的节点
         if (this.firstRender && !this.enableFilter) {
           if (this.firstRenderExpandKeys.includes(node[this.keyField])) {
@@ -257,7 +290,14 @@ export default {
         result.push(node)
         node?.[this.childrenField]?.length &&
           (result = result.concat(
-            this.flat(node[this.childrenField], level + 1, node)
+            this.flat(
+              node[this.childrenField],
+              level + 1,
+              node,
+              defaultExpand,
+              defaultChecked,
+              defaultDisable
+            )
           ))
       })
 
@@ -440,11 +480,14 @@ export default {
       this.setParentChecked(node, value)
     },
     setParentChecked(node, value) {
-      if (!node.parent) return
+      if (!node.parent || node.parent.disable) return
       let parentChecked
+      // 如果是选择了节点
       if (value) {
-        parentChecked = !node.parent[this.childrenField].some(
-          i => i.checked !== true
+        // 遍历一下父节点的子元素是否都选中了
+        // 禁用的节点当作是已选中
+        parentChecked = node.parent[this.childrenField].every(
+          i => i.checked || i.disable
         )
       } else {
         parentChecked = false
@@ -455,6 +498,7 @@ export default {
     setChildrenChecked(node, value) {
       if (!node[this.childrenField]) return
       node[this.childrenField].forEach(i => {
+        if (i.disable) return
         i.checked = value
         this.setChildrenChecked(i, value)
       })
@@ -534,20 +578,23 @@ export default {
   overflow: hidden;
 }
 
-.tree_node--content {
+.tree_node--container {
   display: flex;
   justify-content: flex-start;
   align-items: center;
   padding-left: calc(var(--level) * 15px);
 }
 
-.tree_node--content:deep(.el-checkbox__input) {
+.tree_node--container:deep(.el-checkbox__input) {
   line-height: inherit;
   vertical-align: inherit;
 }
 
-.tree_node--content:deep(.el-checkbox__label) {
+.tree_node--container:deep(.el-checkbox__label) {
   line-height: inherit;
+}
+
+.tree_node--container:hover {
 }
 
 .tree_node__expand-btn {
@@ -564,7 +611,8 @@ export default {
 }
 
 .tree_node--expand {
-  transform: rotate(90deg);
+  /* transform: rotate(90deg); */
+  transform: translateY(3px) rotate(90deg);
 }
 
 .tree_node--slot {
