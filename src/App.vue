@@ -3,14 +3,7 @@
     <el-container class="el-container">
       <el-aside width="240px" class="el-aside">
         <h1>树组件功能菜单</h1>
-        <el-menu
-          :default-active="$route.path"
-          class="el-menu-vertical"
-          background-color="#545c64"
-          text-color="#fff"
-          active-text-color="#409EFF"
-          router
-        >
+        <el-menu :default-active="$route.path" class="el-menu-vertical" router>
           <el-menu-item index="/">
             <template slot="title">
               <span>首页</span>
@@ -34,10 +27,15 @@
           <el-menu-item index="/disableNode">
             <span slot="title">禁用节点</span>
           </el-menu-item>
+          <el-menu-item index="/eventEmit">
+            <span slot="title">事件触发</span>
+          </el-menu-item>
         </el-menu>
       </el-aside>
       <el-main>
-        <router-view></router-view>
+        <keep-alive>
+          <router-view></router-view>
+        </keep-alive>
       </el-main>
     </el-container>
   </div>
@@ -83,9 +81,11 @@ body {
 }
 
 .el-aside h1 {
-  background-color: #545c64;
   text-align: center;
+  color: #409eff;
   border-bottom: 1px solid #ccc;
+  border-right: 1px solid #ccc;
+
   margin: 0;
   padding: 15px 0;
 }

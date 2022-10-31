@@ -52,6 +52,7 @@
                   :value="item.checked && !item.disable"
                   @change="!item.disable && toggleChecked(item, !item.checked)"
                   :disabled="item.disable"
+                  :indeterminate="item.checkedChild && !item.checked"
                 >
                   <div class="tree_node--slot">
                     <slot :item="item"></slot>
@@ -136,10 +137,6 @@ export default {
       default: false
     },
     defaultChecked: {
-      type: Boolean,
-      default: false
-    },
-    defaultDisable: {
       type: Boolean,
       default: false
     }
@@ -278,6 +275,8 @@ export default {
         node.checked = checked
         node.level = level
         node.disable = disable
+        node.checkedChild =
+          node[this.childrenField]?.length && this.defaultChecked
         // 如果是首次渲染且没有启用节点过滤，则默认展开expandKeys中的节点
         if (this.firstRender && !this.enableFilter) {
           if (this.firstRenderExpandKeys.includes(node[this.keyField])) {
@@ -474,6 +473,7 @@ export default {
     // 设置节点选中
     setChecked(node, value) {
       node.checked = value
+      node.checkedChild = value
       // 遍历子节点选中
       this.setChildrenChecked(node, value)
       // 遍历父节点选中
@@ -493,12 +493,16 @@ export default {
         parentChecked = false
       }
       node.parent.checked = parentChecked
+      node.parent.checkedChild =
+        parentChecked ||
+        node.parent[this.childrenField].some(i => !i.disable && i.checked)
       this.setParentChecked(node.parent, parentChecked)
     },
     setChildrenChecked(node, value) {
       if (!node[this.childrenField]) return
       node[this.childrenField].forEach(i => {
         if (i.disable) return
+        i.checkedChild = value
         i.checked = value
         this.setChildrenChecked(i, value)
       })

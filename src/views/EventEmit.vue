@@ -10,12 +10,12 @@
       v-loading="loading"
       element-loading-text="数据下载中..."
       element-loading-spinner="el-icon-loading"
-      ><div class="content">
-        <template v-if="item.c?.length">
-          <i class="el-icon-folder" v-if="!item.expand"></i>
-          <i class="el-icon-folder-opened" v-else></i>
-        </template>
-        <i class="el-icon-document" v-else></i> 选项{{ item.t }}
+      :defaultExpand="true"
+      @expand="onExpand"
+      @collapse="onCollapse"
+      @checked="onChecked"
+      ><div class="content" :style="{ color: item.disable ? '#ccc' : '' }">
+        选项{{ item.t }}
       </div></tree
     >
     <div style="text-align: center">
@@ -30,12 +30,26 @@ import Tree from '@/components/Tree'
 import fetchData from '@/mixins/fetchData'
 
 export default {
-  name: 'CustomNode',
+  name: 'EventEmit',
   mixins: [fetchData()],
   components: {
     Tree
+  },
+  methods: {
+    onExpand(item) {
+      alert(`展开了【${item.t}】节点`)
+    },
+    onCollapse(item) {
+      alert(`收起了【${item.t}】节点`)
+    },
+    onChecked(item, value) {
+      const msg = value
+        ? `选择了【${item.t}】节点`
+        : `取消了【${item.t}】节点的选择`
+      alert(msg)
+    }
   }
 }
 </script>
 
-<style scoped></style>
+<style></style>

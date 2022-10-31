@@ -18,7 +18,11 @@ const router = new VueRouter({
     },
     { path: '/customNode', component: () => import('@/views/CustomNode.vue') },
     { path: '/selectNode', component: () => import('@/views/SelectNode.vue') },
-    { path: '/disableNode', component: () => import('@/views/DisableNode.vue') }
+    {
+      path: '/disableNode',
+      component: () => import('@/views/DisableNode.vue')
+    },
+    { path: '/eventEmit', component: () => import('@/views/EventEmit.vue') }
   ]
 })
 

@@ -16,6 +16,8 @@
 | enableFilter        | 是否启用节点过滤功能                         | Boolean | N        | false      | false                                                |
 | filterValue/v-model | 节点过滤的内容，仅在enableFilter为true时有效 | String  | N        | ''         | '1-1'                                                |
 | expandKeys          | 第一次渲染时默认展开的节点的keyField值       | Array   | N        | []         | ['asdf']                                             |
+| defaultExpand       | 第一次渲染时是否默认展开所有节点             | Boolean | N        | false      | false                                                |
+| defaultChecked      | 第一次渲染时是否默认选中节点                 | Boolean | N        | false      | false                                                |
 
 ## 插槽 Slot
 
