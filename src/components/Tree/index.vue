@@ -145,7 +145,8 @@ export default {
       initCount: 0, // 用于permance统计第几次初始化数据
       loading: false, // 数据正在初始化ing
       firstRenderExpandKeys: [], // 第一次渲染时默认展开的节点，仅在第一次渲染时有效
-      firstRender: true // 是否是第一次渲染，第一次渲染时需要判断是否展开节点
+      firstRender: true, // 是否是第一次渲染，第一次渲染时需要判断是否展开节点
+      searchTimer: undefined
     }
   },
   created() {
@@ -160,7 +161,15 @@ export default {
     },
     filterValue: {
       handler(val) {
-        this.enableFilter && this.filterHandle(val, false)
+        if (!this.enableFilter) return
+        if (this.searchTimer) {
+          clearTimeout(this.searchTimer)
+        }
+        this.searchTimer = setTimeout(() => {
+          this.filterHandle(val, false)
+          clearTimeout(this.searchTimer)
+          this.searchTimer = undefined
+        }, 200)
       }
     },
     enableFilter(val) {
@@ -189,6 +198,7 @@ export default {
       this.loading = true
       setTimeout(() => {
         this.flatterData.forEach(node => {
+          if (!this.enableFilter) return
           if (!val) {
             node.visible = node.level === 1
             node.expand = false
@@ -588,9 +598,6 @@ export default {
 
 .tree_node--container:deep(.el-checkbox__label) {
   line-height: inherit;
-}
-
-.tree_node--container:hover {
 }
 
 .tree_node__expand-btn {

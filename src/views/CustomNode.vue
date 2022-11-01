@@ -8,6 +8,7 @@
       childrenField="c"
       v-slot="{ item }"
       v-loading="loading"
+      :expandKeys="['4ffb1', 'de614']"
       element-loading-text="数据下载中..."
       element-loading-spinner="el-icon-loading"
       ><div class="content">
