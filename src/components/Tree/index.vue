@@ -1,21 +1,16 @@
 <template>
   <div class="tree">
     <div v-if="enableFilter" class="tree_filter">
-      <input
-        type="text"
-        :value="filterValue"
-        ref="inputRef"
-        @input="filterTree($event.target.value)"
-        placeholder="输入后按回车键或点击搜索按钮搜索"
-      />
-      <el-button
-        type="primary"
-        icon="el-icon-search"
-        size="small"
-        class="tree_filter--btn"
-        @click.native="filterTree($refs.inputRef.value)"
-        >搜索</el-button
-      >
+      <slot name="search" :data="{ onInput: filterTree, filterValue }">
+        <el-input
+          placeholder="请输入内容"
+          clearable
+          :value="filterValue"
+          ref="inputRef"
+          @input="filterTree"
+        >
+        </el-input>
+      </slot>
     </div>
     <Loading v-if="loading" class="loading"></Loading>
     <div class="tree_container" ref="container" @scroll="onScroll">
@@ -515,8 +510,6 @@ export default {
     },
     // 搜索过滤节点，输入框内回车时调用
     filterTree(val) {
-      // // 如果两次回车时的值一样，不更新
-      // if (this.filterValue === val) return
       this.$emit('update:filterValue', val)
     },
     resetPool() {
