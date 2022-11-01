@@ -5,7 +5,7 @@
         type="text"
         :value="filterValue"
         ref="inputRef"
-        @keyup.enter="filterTree($event.target.value)"
+        @input="filterTree($event.target.value)"
         placeholder="输入后按回车键或点击搜索按钮搜索"
       />
       <el-button
@@ -160,28 +160,27 @@ export default {
     list: {
       immediate: true,
       handler() {
-        this.filterHandle(this.filterValue)
+        this.filterHandle(this.filterValue, true)
       }
     },
     filterValue: {
       handler(val) {
-        this.enableFilter && this.filterHandle(val)
+        this.enableFilter && this.filterHandle(val, false)
       }
     },
     enableFilter() {
       this.pool = []
       this.containerOffset = 0
       this.containerHeight = 0
-      this.flatterData = []
+      // this.flatterData = []
       this.firstRender = true
-      this.filterHandle(this.filterValue)
+      this.filterHandle(this.filterValue, true)
     }
   },
   methods: {
-    filterHandle(val) {
-      if (!val || !this.enableFilter) {
+    filterHandle(val, reFlat = false) {
+      if (reFlat) {
         this.initData()
-        return
       }
 
       const toggleParenVisible = node => {
@@ -193,7 +192,6 @@ export default {
       }
       this.loading = true
       setTimeout(() => {
-        this.setFlatData()
         this.flatterData.forEach(node => {
           if (!val) {
             node.visible = node.level === 1
@@ -335,7 +333,7 @@ export default {
 
       this.$emit('update', result, this.pool)
       // 有数据才认为已渲染
-      if (this.flatterData.length) {
+      if (flatterData.length) {
         this.firstRender = false
       }
 
@@ -516,8 +514,8 @@ export default {
     },
     // 搜索过滤节点，输入框内回车时调用
     filterTree(val) {
-      // 如果两次回车时的值一样，不更新
-      if (this.filterValue === val) return
+      // // 如果两次回车时的值一样，不更新
+      // if (this.filterValue === val) return
       this.$emit('update:filterValue', val)
     },
     resetPool() {

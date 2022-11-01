@@ -31,6 +31,11 @@ export default {
   mixins: [fetchData('/generalData.json')],
   components: {
     Tree
+  },
+  data() {
+    return {
+      filterValue: ''
+    }
   }
 }
 </script>
