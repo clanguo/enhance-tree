@@ -472,7 +472,8 @@ export default {
     toggleChecked(node, value) {
       this.setChecked(node, value)
       this.$emit('checked', node, value)
-      this.resetPool()
+      // this.resetPool()
+      this.$forceUpdate()
     },
     // 设置节点选中
     setChecked(node, value) {
