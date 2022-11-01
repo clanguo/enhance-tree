@@ -12,6 +12,8 @@
       element-loading-text="数据下载中..."
       element-loading-spinner="el-icon-loading"
       v-slot="{ item }"
+      :enableFilter="enableFilter"
+      :filterValue.sync="filterValue"
     >
       <div class="content">选项{{ item.t }}</div></tree
     >
@@ -34,7 +36,8 @@ export default {
   },
   data() {
     return {
-      filterValue: ''
+      filterValue: '',
+      enableFilter: false
     }
   }
 }

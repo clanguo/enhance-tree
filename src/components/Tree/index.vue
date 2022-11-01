@@ -168,13 +168,14 @@ export default {
         this.enableFilter && this.filterHandle(val, false)
       }
     },
-    enableFilter() {
+    enableFilter(val) {
       this.pool = []
       this.containerOffset = 0
       this.containerHeight = 0
       // this.flatterData = []
       this.firstRender = true
-      this.filterHandle(this.filterValue, true)
+      // 如果没有启用，当作是没有filterValue
+      this.filterHandle(val ? this.filterValue : '', false)
     }
   },
   methods: {
