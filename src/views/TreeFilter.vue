@@ -1,7 +1,6 @@
 <template>
   <div class="container">
     <tree
-      :list="list"
       ref="tree"
       keyField="i"
       textField="t"

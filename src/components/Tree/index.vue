@@ -84,10 +84,10 @@ export default {
     event: 'update:filterValue'
   },
   props: {
-    list: {
-      type: Array,
-      default: () => []
-    },
+    // list: {
+    //   type: Array,
+    //   default: () => []
+    // },
     keyField: {
       type: String,
       default: 'id'
@@ -151,14 +151,18 @@ export default {
   },
   created() {
     this.firstRenderExpandKeys = this.expandKeys.map(i => i)
+    this.list = []
+  },
+  activated() {
+    this.$forceUpdate()
   },
   watch: {
-    list: {
-      immediate: true,
-      handler() {
-        this.filterHandle(this.filterValue, true)
-      }
-    },
+    // list: {
+    //   immediate: true,
+    //   handler() {
+    //     this.filterHandle(this.filterValue, true)
+    //   }
+    // },
     filterValue: {
       handler(val) {
         if (!this.enableFilter) return
@@ -183,6 +187,10 @@ export default {
     }
   },
   methods: {
+    setData(data) {
+      this.list = data
+      this.filterHandle(this.filterValue, true)
+    },
     filterHandle(val, reFlat = false) {
       if (reFlat) {
         this.initData()
@@ -470,10 +478,24 @@ export default {
     },
     // 对外暴露使用，切换是否选择节点
     toggleChecked(node, value) {
+      if (CONFIG.__DEV__) {
+        performance.mark('startChecked')
+      }
       this.setChecked(node, value)
       this.$emit('checked', node, value)
       // this.resetPool()
       this.$forceUpdate()
+      if (CONFIG.__DEV__) {
+        performance.mark('endChecked')
+        console.log(
+          '【切换节点选择】 duration: %sms',
+          performance.measure('toggleChecked', 'startChecked', 'endChecked')
+            .duration
+        )
+        performance.clearMarks('startChecked')
+        performance.clearMarks('endChecked')
+        performance.clearMeasures('toggleChecked')
+      }
     },
     // 设置节点选中
     setChecked(node, value) {

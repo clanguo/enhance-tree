@@ -15,11 +15,14 @@ export default function (url = '/data.json') {
         })
         .then(d => {
           performance.mark('endJson')
+          window.perform = performance.measure('json', 'initJson', 'endJson')
           console.log(
             '【加载json文件】 duration: %sms',
-            performance.measure('json', 'initJson', 'endJson').duration
+            window.perform.duration
           )
-          this.list = Object.freeze(d)
+          // this.list = Object.freeze(d)
+          this.$refs.tree.setData(Object.freeze(d))
+          window.tree = this.$refs.tree
           // this.list = d
           this.loading = false
           performance.mark('endCreated')

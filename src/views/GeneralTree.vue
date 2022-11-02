@@ -7,7 +7,6 @@
       childrenField="c"
       :defaultExpand="true"
       :defaultChecked="true"
-      :list="list"
       v-loading="loading"
       element-loading-text="数据下载中..."
       element-loading-spinner="el-icon-loading"

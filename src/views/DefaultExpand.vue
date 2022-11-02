@@ -1,7 +1,6 @@
 <template>
   <div class="container">
     <tree
-      :list="list"
       ref="tree"
       keyField="i"
       textField="t"
@@ -32,7 +31,7 @@ export default {
   },
   data() {
     return {
-      expandKeys: ['4ffb1', '96db2']
+      expandKeys: ['b30f4', 'e9751']
     }
   }
 }

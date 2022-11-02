@@ -11,7 +11,6 @@
       textField="t"
       childrenField="c"
       v-slot="{ item }"
-      :list="list"
       ><div class="content">选项{{ item.t }}</div></tree
     >
     <div style="text-align: center">
